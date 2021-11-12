@@ -24,14 +24,14 @@ namespace net.ninebroadcast {
 			PSHostUserInterface ui = Host.UI;
 			PSHostRawUserInterface rui = ui.RawUI;
 
-			Console.WriteLine(ui);
-			Console.WriteLine(rui);
+			ui.WriteLine(ui);
+			ui.WriteLine(rui);
 
-			Console.WriteLine(rui.BackgroundColor);
-			Console.WriteLine(rui.CursorPosition);
-			Console.WriteLine(rui.ForegroundColor);
-			Console.WriteLine(rui.KeyAvailable);
-			Console.WriteLine(rui.WindowSize);
+			ui.WriteLine(rui.BackgroundColor);
+			ui.WriteLine(rui.CursorPosition);
+			ui.WriteLine(rui.ForegroundColor);
+			ui.WriteLine(rui.KeyAvailable);
+			ui.WriteLine(rui.WindowSize);
 
 			KeyInfo ki = rui.ReadKey();
 

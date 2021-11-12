@@ -1,0 +1,14 @@
+out-host
+            PSHostUserInterface console = this.Host.UI;
+            ConsoleLineOutput lineOutput = new ConsoleLineOutput(console, _paging, new TerminatingErrorContext(this));
+
+            ((OutputManagerInner)this.implementation).LineOutput = lineOutput;
+            base.BeginProcessing();
+
+OutputManagerInner:
+./System.Management.Automation/FormatAndOutput/common/OutputManager.cs
+
+ConsoleLineOutput:
+./System.Management.Automation/FormatAndOutput/out-console/ConsoleLineOutput.cs
+
+PSHostRawUserInterface

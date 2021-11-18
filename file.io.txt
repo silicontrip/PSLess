@@ -1,0 +1,9 @@
+StreamReader(string)
+
+int Read()
+int Peek()
+
+FileSteam(string,mode) : system.io.stream
+Position
+ReadByte()
+Seek(off,from)

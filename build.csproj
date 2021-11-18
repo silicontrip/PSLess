@@ -1,5 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+<PropertyGroup Condition=" '$(os)' == 'Windows_NT' ">
+  <TargetFramework>net48</TargetFramework>
+    <AssemblyName>net.ninebroadcast</AssemblyName>
+</PropertyGroup>
+
+<PropertyGroup Condition=" '$(os)' == 'Unix' ">
+	<TargetFramework>netstandard2.0</TargetFramework>
+	<AssemblyName>net.ninebroadcast</AssemblyName>
+</PropertyGroup>
+
+
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>less</AssemblyName>

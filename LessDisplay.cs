@@ -8,16 +8,16 @@ namespace net.ninebroadcast {
 	public class LessDisplay {
 
 		private PSHostUserInterface hostui;
-        public string StatusLine {get; set; }
+        // public string StatusLine {get; set;} // should this be handled by us?
         public ConsoleColor ForegroundStatusColour { get; set; }
         public ConsoleColor BackgroundStatusColour  { get; set; }
+
 
 		public LessDisplay (PSHostUserInterface rui)
 		{
 			this.hostui = rui;
             ForegroundStatusColour = ConsoleColor.Yellow;
             BackgroundStatusColour = ConsoleColor.Black;
-            
         }
 
 		public ConsoleColor Background() { return hostui.RawUI.BackgroundColor; }
@@ -36,8 +36,7 @@ namespace net.ninebroadcast {
 			return line.PadRight(windowWidth());
 		}
 
-
-		public void redraw (string[] line)
+		public void draw (string[] line, string StatusLine)
 		{
 
 			this.hostui.Write("\r");
@@ -48,35 +47,15 @@ namespace net.ninebroadcast {
 			this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, widthLine(StatusLine));
 		}
 
-        public void drawStatus() {
+        public void drawStatus(string StatusLine) {
             this.hostui.Write("\r");
             this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, widthLine(StatusLine));
         }
 
-		private void clearStatus()
+		public void clearStatus()
 		{
 			this.hostui.Write("\r");
-
-		}
-
-        private void updateStatus(string status) 
-        {
-            StatusLine = status;
-            this.hostui.Write("\r");
-            this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, widthLine(StatusLine));
-        }
-
-// this method handles a specific case want to rename it to it's more correct action
-
-		public void scroll(string[] line)
-		{
-
-			this.hostui.Write("\r");
-			string ll = line[line.Length - 1];
-
-			this.hostui.WriteLine(Foreground(),Background(),ll);
-			this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour , StatusLine);
-
+			this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, widthLine("")); // or not inverted
 		}
 
     }

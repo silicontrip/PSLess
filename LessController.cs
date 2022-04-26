@@ -8,110 +8,194 @@ namespace net.ninebroadcast {
 	public class LessController {
 
 		private TextDocument document;
-		private PSHostRawUserInterface interface;
-		private ConsoleColor colourFore; 
-		private ConsoleColor colourBack;
-		// find a better name than Screen
-		private Size sizeScreen;
-		private Size sizeStatus;
-		private Coordinates originScreen;
-		private Coordinates originStatus;
-		private BufferCell cellClear;
-		private BufferCell[,] bcaStatus;
-		private BufferCell[,] bcaScreen;
-		private Rectangle rectScreen;
-		private Rectangle rectStatus;
+		private LessDisplay display;
+		private PSHostUserInterface hostui;
+		private string commandLine;
+		private string prefix;
 
-		int pageSize;
 		int currentLineNumber;
 		string lastSearch;
+		string statusLine;
 
-		public LessController (TextDocument doc, PSHostRawUserInterface rui)
+		int statusInputCount;
+
+		public LessController (TextDocument doc, PSHostUserInterface h, LessDisplay ld)
 		{
 			this.document = doc;
-			this.interface = rui;
-
-			this.colourBack = this.interface.BackgroundColor;
-			this.colourFore = this.inteface.ForegroundColor;
-
-			Size windowFrame  = this.interface.WindowSize;
-			originScreen = new Coordinates(0,0);
-			originStatus = new Coordinates(0,windowFrame.Height - 1);
-
-			this.cellClear = new BufferCell (' ',this.colourFore,this.colourBack,0);
+			this.display = ld;
+			this.hostui = h;
 
 			string[] statusString = new string[] {this.document.getBaseName()};
-			bcaStatus = this.interface.NewBufferCellArray(statusString,this.colourBack,this.colourFore);  // bg/fg inverted
-			bcaScreen = this.interface.NewBufferCellArray(windowFrame.Width,windowFrame.Height-1,cellClear);
 
-			rectScreen = new Rectangle(0,0,windowFrame.Width,windowFrame.Height-2);
-			rectStatus = new Rectangle(0,windowFrame.Height-1,windowFrame.Width,windowFrame.Height);
-
-			sizeScreen = new Size(windowFrame.Width,windowFrame.Height -1);
+			commandLine = ""; 
+			prefix = "";
 			currentLineNumber = 1;
+			statusInputCount = 0;
+
+			updateStatus(this.document.getBaseName());
 		}
 
-		public void draw ()
+		private void displayDocument(string s) 
+		{ 
+			display.StatusLine = s;
+			display.redraw(document.ReadLine(currentLineNumber,display.pageHeight()));
+		}
+
+		private void scroll() { 
+			display.scroll(document.ReadLine(currentLineNumber,display.pageHeight()));
+		}
+
+		//	private void setStatus(string s)
+		//{
+		//	display.StatusLine = s;
+		//}
+
+		private void displayStatus(string s)
 		{
+			display.StatusLine = s;
+			display.drawStatus();
+		}
 
-			string[] statusString = new string[] {this.document.getBaseName()};
-			bcaStatus = this.interface.NewBufferCellArray(statusString,this.colourBack,this.colourFore);
-			string[] line = document.ReadLine(currentLineNumber,sizeScreen);
+		private void alert()
+		{
+			display.StatusLine = ":";
+			System.Console.Beep();
+		}
+	
+		private bool moveCurrentLine(int moveNumber)
+		{
+			int old = currentLineNumber;
+			currentLineNumber += moveNumber;
 
-			BufferCell[,] back =interface.NewBufferCellArray(line,Fg,Bg);
+			// don't move before start of document.
 
-			interface.SetBufferContents(screenOrigin,back);
-			interface.SetBufferContents(statusOrigin,statusLine);
+			// don't move past end of document but allow partial display
+
+			if (currentLineNumber > document.Length())
+			{
+				currentLineNumber = old; return false;
+			}
+			if (currentLineNumber < 1)
+			{
+				currentLineNumber = old; return false;
+			}
+			return true;
 		}
 
 		public bool command()
 		{
-			KeyInfo ki = interface.ReadKey(ReadKeyOptions.NoEcho);
-			bool changed = false;
-				// ui.WriteLine(ki.ToString());
-				// commands
-				if (ki.Character == 'q')
+
+			//for(;;)
+			//{
+			KeyInfo ki = hostui.RawUI.ReadKey(ReadKeyOptions.NoEcho | ReadKeyOptions.IncludeKeyUp);
+
+			// printable
+			// unprintable
+			// empty commandLine
+			// commandline length > 0
+
+			/* prefix commands
+
+			numerals : ESC / & m ' ^X - _ _ + !
+
+			*/
+
+			
+
+/*
+: numeral -> error
+ESC numeral -> error
+
+*/
+
+		// business logic
+		// it really shouldn't be in a bunch of else ifs
+		// it's not always just a simple case of key press
+		// there is state based on the contents of the command line and statusInputCount
+
+			if (ki.Character >='0' && ki.Character <='9') {
+				//commandLine = commandLine + ki.Character;
+				if (commandLine != ":") {
+				statusInputCount = StatusInputCount * 10 + Int.parseInt(ki.Character);
+				commandLine = ":" + statusInputCount;
+				displayStatus(":"+commandLine);
+			} else if (ki.Character==':') {
+				commandLine = ":";
+				statusInputCount = 0;
+				displayStatus(" " + commandLine);
+			} else if (ki.Character == 'Z') {
+				if (commandLine == "Z")
+				{
+					// prefix numeral
+
+					displayStatus("");
 					return false;
-
-				else if (ki.Character == ' ') { 
-					currentLineCount += sizey - 1;  // handled by textdocument or WindowBuffer.  ooo that's us.
-					changed = true;
+				} else if (commandLine.Length==0) {
+					commandLine="Z";
+				} else {
+					alert();
+					commandLine = "";
 				}
-				else if (ki.Character == 'b') {
-					currentLineCount -= sizey - 1;
-					changed = true;
-				} 
-				else if (ki.VirtualKeyCode == 40)
+			} else if (ki.VirtualKeyCode==27) {
+				commandLine = "ESC";
+				displayStatus(" " + commandLine);
+			} else {
+
+				switch(ki.VirtualKeyCode)
 				{
-					currentLineCount ++;
-					changed = true;
-				}
-				else if (ki.VirtualKeyCode == 38)
-				{
-					currentLineCount --;
-					changed = true;
-				}
-				else 
-					Console.WriteLine( ki.VirtualKeyCode );
+					case 8: // delete
+						if (commandLine.Length >0) {
+							commandLine = commandLine.Substring(0, commandLine.Length -1);
+							displayStatus(commandLine);
+						} else {
+							alert();
+						}
+						break;
+					case 40: // cursor down
 
-				if (changed)
-				{
-					try {
-						line = doc.ReadLine(currentLineCount,tz);  // maybe throw on IO error
-				// Console.WriteLine("lines read: " + line.Length);
-				// Console.WriteLine(" line array: " + line);
+						default:
+							switch (ki.Character)
+							{
+								case 'q':
+								case 'Q':
+									displayStatus("");  // erase bottom line
+									return false;
+								case ' ':
+									// move X lines or 1 page (or less if end of document)
+									if(moveCurrentLine(display.pageHeight()))
+										displayDocument(":");
+									else
+									{
+										displayStatus(":");
+										alert();
+									}
+									break;
+								case 'b':
+									if(moveCurrentLine(-display.pageHeight()))
+										displayDocument(":");
+									else
+									{
+										displayStatus(":");
+										alert();
+									}
+									break;
+								case 'e':
+								case 'j':
 
-						back =rui.NewBufferCellArray(line,Fg,Bg);
-
-					// rui.SetBufferContents(screenOrigin,clearScreen);
-						rui.SetBufferContents(screenOrigin,back);
-						rui.SetBufferContents(statusOrigin,statusLine);
-					} catch (Exception e) {
-						// terminal beep
-					}
+								default:
+									commandLine="";
+									displayStatus("(" + ki.VirtualKeyCode + "/"+ ki.ControlKeyState +")" + ":");
+									alert();
+									break;
+							}
+							break;
 				}
+
+			}
+				// Console.WriteLine("(" + ki.VirtualKeyCode +")" );
+
+			return true;
 		}
 
 	}
 }
-

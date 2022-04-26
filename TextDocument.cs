@@ -16,6 +16,7 @@ namespace net.ninebroadcast {
 	//	private bool unsaved;
 		private Encoding readWriteEncoding;
 		private Int64 currentLine;
+		private int length;
 
 		public TextDocument()
 		{
@@ -41,6 +42,16 @@ namespace net.ninebroadcast {
 				// buffer = new List<string>();
 			// }
 			this.filename = filename;
+			countLines();
+		}
+
+		public int Length () { return length; }
+
+		private void countLines() { 
+			length = 0;
+			while (SeekNextLine()) 
+				length++;
+			documentFile.Seek(0, SeekOrigin.Begin);
 		}
 
 		public string getBaseName()
@@ -93,7 +104,7 @@ namespace net.ninebroadcast {
 			while ((cc != 10) && (cc != 13) && cc >=0)
 			{
 				// sb.add(cc);
-				cc = documentFile.ReadByte();
+				cc = documentFile.ReadByte();  // Dave Cutler's biggest nightmare, read a byte, read a byte, read a byte byte byte
 			}
 			if (cc<0)
 				return false;
@@ -139,7 +150,7 @@ namespace net.ninebroadcast {
 			return sb.ToString();
 		}
 
-		public string[] ReadLine (Int64 from, Size pagesize)
+		public string[] ReadLine (Int64 from, int lineCount)
 		{
 			List<string> lineList = new List<string>();
 			//StringBuilder lineBuffer = new StringBuilder();
@@ -150,33 +161,13 @@ namespace net.ninebroadcast {
 			}
 			Int64 count = 0;
 			string line = "";
-			while ((count < pagesize.Height) && (line != null))
+			while ((count < lineCount) && (line != null))
 			{
 				// needs EOL
 				line = ReadLine(); // EOF anyone?
-				// Console.Write(line);
-				if (line != null)
-				{
-					// Console.WriteLine(">>>"+line+"<<<");
-
-					string padline = "".PadRight(pagesize.Width);
-					if (line.Length <= pagesize.Width)
-						lineList.Add(line.PadRight(pagesize.Width));
-					if (line.Length > pagesize.Width)
-					{
-						// TODO: check not last line in buffer
-						lineList.Add(line.Substring(0,pagesize.Width));
-						lineList.Add(line.Substring(pagesize.Width));
-						count++;
-					}
-//					lineList.Add(line);
-
-				}
+				lineList.Add(line);
 				count++;
 			}
-		//	lineList.Add("this is a line");
-		//	lineList.Add("a line with a \n new line");
-			//currentLine += count;
 
 			return lineList.ToArray();
 		}

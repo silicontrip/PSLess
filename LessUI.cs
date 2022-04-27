@@ -23,18 +23,10 @@ namespace net.ninebroadcast {
 		public ConsoleColor Background() { return hostui.RawUI.BackgroundColor; }
 		public ConsoleColor Foreground() { return hostui.RawUI.ForegroundColor; }
 
-		public Size windowSize() { return hostui.RawUI.WindowSize; }
-		public int windowWidth() { return hostui.RawUI.WindowSize.Width; }
-		public int windowHeight() { return hostui.RawUI.WindowSize.Height; }
-		public int pageHeight() { return hostui.RawUI.WindowSize.Height - 1; }
-
-		private string widthLine(string line) 
-		{
-			if (line.Length > windowWidth())
-				return line.Substring(windowWidth());
-
-			return line.PadRight(windowWidth());
-		}
+		public Size WindowSize() { return hostui.RawUI.WindowSize; }
+		public int WindowWidth() { return hostui.RawUI.WindowSize.Width; }
+		public int WindowHeight() { return hostui.RawUI.WindowSize.Height; }
+		public int PageHeight() { return hostui.RawUI.WindowSize.Height - 1; }
 
 		public void draw (string[] line, string StatusLine)
 		{
@@ -42,20 +34,20 @@ namespace net.ninebroadcast {
 			this.hostui.Write("\r");
 
 			foreach (string ll in line)
-				this.hostui.WriteLine(Foreground(),Background(),widthLine(ll));
+				this.hostui.WriteLine(Foreground(),Background(),ll);
 
-			this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, widthLine(StatusLine));
+			this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, StatusLine);
 		}
 
         public void drawStatus(string StatusLine) {
             this.hostui.Write("\r");
-            this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, widthLine(StatusLine));
+            this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, StatusLine);
         }
 
 		public void clearStatus()
 		{
 			this.hostui.Write("\r");
-			this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, widthLine("")); // or not inverted
+			this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, "".PadRight(WindowWidth())); // or not inverted
 		}
 
     }

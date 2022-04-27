@@ -2,20 +2,13 @@
 
 <PropertyGroup Condition=" '$(os)' == 'Windows_NT' ">
   <TargetFramework>net48</TargetFramework>
-    <AssemblyName>net.ninebroadcast</AssemblyName>
+    <AssemblyName>less</AssemblyName>
 </PropertyGroup>
 
 <PropertyGroup Condition=" '$(os)' == 'Unix' ">
 	<TargetFramework>netstandard2.0</TargetFramework>
-	<AssemblyName>net.ninebroadcast</AssemblyName>
+	<AssemblyName>less</AssemblyName>
 </PropertyGroup>
-
-
-  <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <AssemblyName>less</AssemblyName>
-	<!-- <EnableDefaultCompileItems>false</EnableDefaultCompileItems> -->
-  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="PowerShellStandard.Library" Version="5.1.0-preview-06">

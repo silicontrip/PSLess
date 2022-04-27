@@ -22,7 +22,7 @@ namespace net.ninebroadcast {
 			controller.Status(" Z");		
 		}
 
-		public LessInput beginParse () { 
+		public override LessInput beginParse () { 
 			// state logic goes here;
 			KeyInfo ki = hostui.RawUI.ReadKey(ReadKeyOptions.NoEcho | ReadKeyOptions.IncludeKeyUp);
 			if (ki.Character == 'Z')
@@ -44,7 +44,7 @@ namespace net.ninebroadcast {
 			controller.Status(":");
 		}
 
-		public LessInput beginParse () { 
+		public override LessInput beginParse () { 
 			// state logic goes here;
 			// thinking that this might come from the LessController (which inturn passes to Display)
 			KeyInfo ki = hostui.RawUI.ReadKey(ReadKeyOptions.NoEcho | ReadKeyOptions.IncludeKeyUp);
@@ -146,7 +146,7 @@ namespace net.ninebroadcast {
 			controller.Status(" :");
 			//controller.updateStatus(status);
 		}
-		public LessInput beginParse () { 
+		public override LessInput beginParse () { 
 			KeyInfo ki = hostui.RawUI.ReadKey(ReadKeyOptions.NoEcho | ReadKeyOptions.IncludeKeyUp);
 
 			if (ki.Character =='Q' || ki.Character == 'q')
@@ -204,7 +204,7 @@ namespace net.ninebroadcast {
 			controller.Status(" ESC");
 		}
 
-		public LessInput beginParse () { 
+		public override LessInput beginParse () { 
 			KeyInfo ki = hostui.RawUI.ReadKey(ReadKeyOptions.NoEcho | ReadKeyOptions.IncludeKeyUp);
 
 			if (ki.Character == 'n') {

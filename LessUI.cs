@@ -30,7 +30,6 @@ namespace net.ninebroadcast {
 
 		public void draw (string[] line, string StatusLine)
 		{
-
 			this.hostui.Write("\r");
 
 			foreach (string ll in line)

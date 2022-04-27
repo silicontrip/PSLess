@@ -9,14 +9,14 @@ namespace net.ninebroadcast {
  // Get-ChildItem ...  Get-Item ... Get-Content  
  // I really do think that they went overboard with the verb-noun paradigm
     [Cmdlet(VerbsData.Out, "Less")]
-    public class conui : PSCmdlet
+    public class less : PSCmdlet
     {
 
-		int sizex;
-		int sizey;
+		//int sizex;
+		//int sizey;
 
         public
-        conui()
+        less()
         {
             // empty, provided per design guidelines.
         }
@@ -111,25 +111,25 @@ namespace net.ninebroadcast {
 			SessionState ss = new SessionState();
 			Directory.SetCurrentDirectory(ss.Path.CurrentFileSystemLocation.Path);
 
-			// string currentPath = this.SessionState.Path.CurrentFileSystemLocation.ToString();
+			// TextDocument[] documentList = new TextDocument[];
 
-			// string fullPath = System.IO.Path.Combine(currentPath,path);
-
-			TextDocument doc;
+			LessDocument doc;
 
 			if (!String.IsNullOrEmpty(path))
 			{
 				try {
 					// multiple TextDocument instances for multiple paths
-					doc = new TextDocument(path);
+					doc = new LessDocument(path);
 
 					LessDisplay lcd = new LessDisplay(Host.UI);
 					LessController lc = new LessController(doc,lcd);  // TextDocument as array
 					LessInput lkc = new DefaultInput(lc,Host.UI,""); 
 					// looks like we need more UI methods than RawUI
 
-			// Looking a bit empty in here now.
-			// maybe space to add some more command line options
+					// lc.displayDocument();
+
+					// Looking a bit empty in here now.
+					// maybe space to add some more command line options
 
 					while (lkc != null) {
 						 lkc = lkc.beginParse(); 
@@ -138,6 +138,7 @@ namespace net.ninebroadcast {
 					doc.Close();
 				} catch (Exception e) {
 					Host.UI.WriteLine(e.Message);
+					Host.UI.WriteLine(e.StackTrace);
 				}
 			}
 

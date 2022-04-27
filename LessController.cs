@@ -7,7 +7,7 @@ using System.Management.Automation.Host;
 namespace net.ninebroadcast {
 	public class LessController {
 
-		private TextDocument document;
+		private LessDocument document;
 		private LessDisplay display;
 		// private PSHostUserInterface hostui;
 		// private string commandLine;
@@ -22,23 +22,24 @@ namespace net.ninebroadcast {
 		private int windowHeight;
 		private int windowWidth;
 
-		public LessController (TextDocument doc, LessDisplay ld)
+		public LessController (LessDocument doc, LessDisplay ld)
 		{
 			this.document = doc;
 			this.display = ld;
-			// this.hostui = h;
 
 			//string[] statusString = new string[] {this.document.getBaseName()};
 
-			//commandLine = ""; 
-			//prefix = "";
 			currentLineNumber = 1;
 			//statusInputCount = 0;
+			//statusLine = this.document.getBaseName()
 
 			Status(this.document.getBaseName());
 
 			windowWidth = display.WindowWidth();
 			windowHeight = display.WindowHeight();
+			
+			DisplayDocument();
+
 		}
 
 		public void setWindowHeight(string moveNumber)
@@ -48,7 +49,7 @@ namespace net.ninebroadcast {
 				windowHeight = newHeight;
 		}
 
-		private void displayDocument(string s) 
+		private void DisplayDocument() 
 		{ 
 			// display.StatusLine = s;
 
@@ -58,9 +59,9 @@ namespace net.ninebroadcast {
 			int count = 0 ;
 
 			foreach (string l in window)
-				padWindow[++count] = padLine(l);
+				padWindow[count++] = padLine(l);
 
-			display.draw(window,s);
+			display.draw(padWindow,statusLine);
 		}
 
 		private string padLine(string line) 
@@ -132,8 +133,9 @@ namespace net.ninebroadcast {
 		{
 			int old = currentLineNumber;
 			currentLineNumber = validateLineNumber(lineNumber);
+			statusLine =":";
 			if (currentLineNumber != old)
-				displayDocument(":");
+				DisplayDocument();
 		}
 
 		public void oneLineForward(string moveNumber)

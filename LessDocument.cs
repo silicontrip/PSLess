@@ -7,7 +7,7 @@ using System.Management.Automation.Host;
 
 namespace net.ninebroadcast {
 
-	public class TextDocument {
+	public class LessDocument {
 
 		private Dictionary<Int64,Int64> offsets;
 		private string filename;
@@ -15,10 +15,10 @@ namespace net.ninebroadcast {
 	//	private StreamReader documentStream;
 	//	private bool unsaved;
 		private Encoding readWriteEncoding;
-		private Int64 currentLine;
+		private Int64 currentLine;  //used for line seeking.
 		private int length;
 
-		public TextDocument()
+		public LessDocument()
 		{
 		//	buffer = new List<string>();
 			this.filename="";
@@ -26,7 +26,7 @@ namespace net.ninebroadcast {
 		//	unsaved=false;
 		}
 
-		public TextDocument(string filename)
+		public LessDocument(string filename)
 		{
 			readWriteEncoding = new ASCIIEncoding();
 			// try {

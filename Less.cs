@@ -120,14 +120,20 @@ namespace net.ninebroadcast {
 			if (!String.IsNullOrEmpty(path))
 			{
 				try {
+					// multiple TextDocument instances for multiple paths
 					doc = new TextDocument(path);
+
 					LessDisplay lcd = new LessDisplay(Host.UI);
-					LessController lc = new LessController(doc,Host.UI,lcd);  // looks like we need more UI methods than RawUI
+					LessController lc = new LessController(doc,lcd);  // TextDocument as array
+					LessInput lkc = new DefaultInput(lc,Host.UI,""); 
+					// looks like we need more UI methods than RawUI
 
 			// Looking a bit empty in here now.
 			// maybe space to add some more command line options
 
-					while (lc.command()) { ; }
+					while (lkc != null) {
+						 lkc = lkc.beginParse(); 
+					}
 
 					doc.Close();
 				} catch (Exception e) {

@@ -9,193 +9,157 @@ namespace net.ninebroadcast {
 
 		private TextDocument document;
 		private LessDisplay display;
-		private PSHostUserInterface hostui;
-		private string commandLine;
-		private string prefix;
+		// private PSHostUserInterface hostui;
+		// private string commandLine;
+		// private string prefix;
 
-		int currentLineNumber;
-		string lastSearch;
-		string statusLine;
+		private int currentLineNumber;
+		private int currentColumnNumber;
 
-		int statusInputCount;
+		private string lastSearch;
+		private string statusLine;
 
-		public LessController (TextDocument doc, PSHostUserInterface h, LessDisplay ld)
+		private int windowHeight;
+		private int windowWidth;
+
+		public LessController (TextDocument doc, LessDisplay ld)
 		{
 			this.document = doc;
 			this.display = ld;
-			this.hostui = h;
+			// this.hostui = h;
 
-			string[] statusString = new string[] {this.document.getBaseName()};
+			//string[] statusString = new string[] {this.document.getBaseName()};
 
-			commandLine = ""; 
-			prefix = "";
+			//commandLine = ""; 
+			//prefix = "";
 			currentLineNumber = 1;
-			statusInputCount = 0;
+			//statusInputCount = 0;
 
-			updateStatus(this.document.getBaseName());
+			Status(this.document.getBaseName());
+
+			windowWidth = display.WindowWidth();
+			windowHeight = display.WindowHeight();
+		}
+
+		public void setWindowHeight(string moveNumber)
+		{
+			int newHeight = Int32.Parse(moveNumber);
+			if (newHeight >= 1 && newHeight <= document.Length())
+				windowHeight = newHeight;
 		}
 
 		private void displayDocument(string s) 
 		{ 
-			display.StatusLine = s;
-			display.redraw(document.ReadLine(currentLineNumber,display.pageHeight()));
+			// display.StatusLine = s;
+
+			string[] window = document.ReadLine(currentLineNumber,windowHeight);
+			string[] padWindow = new string[window.Length];
+
+			int count = 0 ;
+
+			foreach (string l in window)
+				padWindow[++count] = padLine(l);
+
+			display.draw(window,s);
 		}
 
-		private void scroll() { 
-			display.scroll(document.ReadLine(currentLineNumber,display.pageHeight()));
-		}
-
-		//	private void setStatus(string s)
-		//{
-		//	display.StatusLine = s;
-		//}
-
-		private void displayStatus(string s)
+		private string padLine(string line) 
 		{
-			display.StatusLine = s;
-			display.drawStatus();
+
+			// do something smart with currentColumnNumber
+
+			if (line.Length > windowWidth)
+				return line.Substring(windowWidth);
+
+			return line.PadRight(windowWidth);
 		}
 
-		private void alert()
+// this should only take a single line of text
+/*
+		private void scroll(string s) { 
+			string line = document.ReadLine(currentLineNumber+windowHeight,1);
+			display.draw(line,s);
+		}
+*/
+		public void displayCurrentFileDetails()
 		{
-			display.StatusLine = ":";
+			// less-help.txt lines 78-141/236 byte 7335/11925 61%  (press RETURN)
+
+			int bottom = currentLineNumber + windowHeight;
+			int total = document.Length();
+
+			display.drawStatus(document.FileName() + " lines " + currentLineNumber +"-" +bottom+"/"+total);
+			// wait for return
+		}
+
+		public void Status(string s)
+		{
+			statusLine = s;
+			display.drawStatus(statusLine);
+		}
+
+		public void Alert()
+		{
 			System.Console.Beep();
 		}
 	
-		private bool moveCurrentLine(int moveNumber)
+		private int validateLineNumber(int ln)
 		{
-			int old = currentLineNumber;
-			currentLineNumber += moveNumber;
-
 			// don't move before start of document.
-
 			// don't move past end of document but allow partial display
 
-			if (currentLineNumber > document.Length())
+			if (ln > document.Length())
 			{
-				currentLineNumber = old; return false;
+				Alert(); 
+				return document.Length();
 			}
-			if (currentLineNumber < 1)
+			if (ln < 1)
 			{
-				currentLineNumber = old; return false;
+				Alert();
+				return 1;
 			}
-			return true;
+			return currentLineNumber;
 		}
-
-		public bool command()
+	
+		private int defaultInteger (string moveNumber, int d)
 		{
-
-			//for(;;)
-			//{
-			KeyInfo ki = hostui.RawUI.ReadKey(ReadKeyOptions.NoEcho | ReadKeyOptions.IncludeKeyUp);
-
-			// printable
-			// unprintable
-			// empty commandLine
-			// commandline length > 0
-
-			/* prefix commands
-
-			numerals : ESC / & m ' ^X - _ _ + !
-
-			*/
-
-			
-
-/*
-: numeral -> error
-ESC numeral -> error
-
-*/
-
-		// business logic
-		// it really shouldn't be in a bunch of else ifs
-		// it's not always just a simple case of key press
-		// there is state based on the contents of the command line and statusInputCount
-
-			if (ki.Character >='0' && ki.Character <='9') {
-				//commandLine = commandLine + ki.Character;
-				if (commandLine != ":") {
-				statusInputCount = StatusInputCount * 10 + Int.parseInt(ki.Character);
-				commandLine = ":" + statusInputCount;
-				displayStatus(":"+commandLine);
-			} else if (ki.Character==':') {
-				commandLine = ":";
-				statusInputCount = 0;
-				displayStatus(" " + commandLine);
-			} else if (ki.Character == 'Z') {
-				if (commandLine == "Z")
-				{
-					// prefix numeral
-
-					displayStatus("");
-					return false;
-				} else if (commandLine.Length==0) {
-					commandLine="Z";
-				} else {
-					alert();
-					commandLine = "";
-				}
-			} else if (ki.VirtualKeyCode==27) {
-				commandLine = "ESC";
-				displayStatus(" " + commandLine);
-			} else {
-
-				switch(ki.VirtualKeyCode)
-				{
-					case 8: // delete
-						if (commandLine.Length >0) {
-							commandLine = commandLine.Substring(0, commandLine.Length -1);
-							displayStatus(commandLine);
-						} else {
-							alert();
-						}
-						break;
-					case 40: // cursor down
-
-						default:
-							switch (ki.Character)
-							{
-								case 'q':
-								case 'Q':
-									displayStatus("");  // erase bottom line
-									return false;
-								case ' ':
-									// move X lines or 1 page (or less if end of document)
-									if(moveCurrentLine(display.pageHeight()))
-										displayDocument(":");
-									else
-									{
-										displayStatus(":");
-										alert();
-									}
-									break;
-								case 'b':
-									if(moveCurrentLine(-display.pageHeight()))
-										displayDocument(":");
-									else
-									{
-										displayStatus(":");
-										alert();
-									}
-									break;
-								case 'e':
-								case 'j':
-
-								default:
-									commandLine="";
-									displayStatus("(" + ki.VirtualKeyCode + "/"+ ki.ControlKeyState +")" + ":");
-									alert();
-									break;
-							}
-							break;
-				}
-
-			}
-				// Console.WriteLine("(" + ki.VirtualKeyCode +")" );
-
-			return true;
+			// weird ass conditional behaviour, numeric overrides its primary function
+			if (moveNumber.Length > 0)
+				return Int32.Parse(moveNumber);
+			return d;
+		}
+		public void moveCurrentLineTo(int lineNumber)
+		{
+			int old = currentLineNumber;
+			currentLineNumber = validateLineNumber(lineNumber);
+			if (currentLineNumber != old)
+				displayDocument(":");
 		}
 
+		public void oneLineForward(string moveNumber)
+		{
+			moveCurrentLineTo(currentLineNumber + defaultInteger(moveNumber,1));
+		}
+
+		public void oneLineBackward(string moveNumber)
+		{
+			moveCurrentLineTo(currentLineNumber - defaultInteger(moveNumber,1));
+		}
+
+		public void oneWindowForward(string moveNumber)
+		{
+			moveCurrentLineTo(currentLineNumber + defaultInteger(moveNumber,windowHeight));
+		}
+
+		public void oneWindowBackward(string moveNumber)
+		{
+			moveCurrentLineTo(currentLineNumber - defaultInteger(moveNumber,windowHeight));
+		}
+
+		public void findNext(string somethingNeedDoing) { ; }
+		public void examineFileNext(string moveNumber) { ; }
+		public void examineFilePrevious(string moveNumber) { ; }
+		public void examineFile(string moveNumber) { ; }
+		public void excludeCurrentFile() { ; }
 	}
 }

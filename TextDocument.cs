@@ -46,6 +46,7 @@ namespace net.ninebroadcast {
 		}
 
 		public int Length () { return length; }
+		public string FileName() { return filename; }
 
 		private void countLines() { 
 			length = 0;

@@ -20,6 +20,7 @@ namespace net.ninebroadcast {
             BackgroundStatusColour = ConsoleColor.Black;
         }
 
+		public KeyInfo ReadKey() { return hostui.RawUI.ReadKey(ReadKeyOptions.NoEcho | ReadKeyOptions.IncludeKeyUp); }
 		public ConsoleColor Background() { return hostui.RawUI.BackgroundColor; }
 		public ConsoleColor Foreground() { return hostui.RawUI.ForegroundColor; }
 

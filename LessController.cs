@@ -42,6 +42,11 @@ namespace net.ninebroadcast {
 
 		}
 
+		public KeyInfo ReadKey()
+		{
+			return display.ReadKey();
+		}
+
 		public void setWindowHeight(string moveNumber)
 		{
 			int newHeight = Int32.Parse(moveNumber);

@@ -123,7 +123,7 @@ namespace net.ninebroadcast {
 
 					LessDisplay lcd = new LessDisplay(Host.UI);
 					LessController lc = new LessController(doc,lcd);  // TextDocument as array
-					LessInput lkc = new DefaultInput(lc,Host.UI,""); 
+					LessInput lkc = new DefaultInput(lc,""); 
 					// looks like we need more UI methods than RawUI
 
 					// lc.displayDocument();

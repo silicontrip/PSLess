@@ -16,9 +16,9 @@ namespace net.ninebroadcast {
 
 	public class ExitInput : LessInput {
 
-		public ExitInput (LessController lc, PSHostUserInterface ui, string n) {
+		public ExitInput (LessController lc, string n) {
 			controller = lc;
-			hostui = ui;
+			//hostui = ui;
 			controller.Status(" Z");		
 		}
 
@@ -29,7 +29,7 @@ namespace net.ninebroadcast {
 				return null;
 
 			controller.Alert();
-			return new DefaultInput(controller,hostui,"");
+			return new DefaultInput(controller,"");
 		}
 	}
 
@@ -37,9 +37,9 @@ namespace net.ninebroadcast {
 
 		private string numericInput;
 
-		public DefaultInput (LessController lc, PSHostUserInterface ui, string n) {
+		public DefaultInput (LessController lc, string n) {
 			controller = lc;
-			hostui = ui;
+			//hostui = ui;
 			numericInput = n;
 			controller.Status(":");
 		}
@@ -47,7 +47,7 @@ namespace net.ninebroadcast {
 		public override LessInput beginParse () { 
 			// state logic goes here;
 			// thinking that this might come from the LessController (which inturn passes to Display)
-			KeyInfo ki = hostui.RawUI.ReadKey(ReadKeyOptions.NoEcho | ReadKeyOptions.IncludeKeyUp);
+			KeyInfo ki = controller.ReadKey();
 
 			// we stay here until a non numeric key is pressed.
 			// include delete and ^U
@@ -58,7 +58,7 @@ namespace net.ninebroadcast {
 			{
 				numericInput = numericInput + ki.Character;
 				controller.Status(":"+numericInput);
-				ki = hostui.RawUI.ReadKey(ReadKeyOptions.NoEcho | ReadKeyOptions.IncludeKeyUp);
+				ki = controller.ReadKey();
 			}
 			
 			char key = ki.Character;
@@ -70,22 +70,22 @@ namespace net.ninebroadcast {
 
 
 			if (ki.Character == ':') {
-				return new ColonInput(controller,hostui,numericInput);
+				return new ColonInput(controller,numericInput);
 			}
 			if (ki.Character == 'q' || ki.Character == 'Q') 
 				return null;
 
 			if (ki.Character == 'Z')
-				return new ExitInput(controller,hostui,numericInput); // not sure if we should make the constructors the same.
+				return new ExitInput(controller,numericInput); // not sure if we should make the constructors the same.
 
 			if (ki.VirtualKeyCode==27)
-				return new EscapeInput(controller,hostui,numericInput);
+				return new EscapeInput(controller,numericInput);
 
 			if (ki.Character=='=')  // or ^G :f
 			{
 				// less-help.txt lines 78-141/236 byte 7335/11925 61%  (press RETURN)
 				controller.displayCurrentFileDetails();
-				return new DefaultInput(controller,hostui,"");
+				return new DefaultInput(controller,"");
 			}	
 
 // these commands take an optional numeric argument.
@@ -97,7 +97,7 @@ namespace net.ninebroadcast {
 			{
 				//controller.resetStatus();
 				controller.oneLineForward(numericInput);
-				return new DefaultInput(controller,hostui,"");
+				return new DefaultInput(controller,"");
 			}
 
 			if (ki.Character=='y' ||
@@ -105,7 +105,7 @@ namespace net.ninebroadcast {
 			{
 				//controller.resetStatus();
 				controller.oneLineBackward(numericInput);
-				return new DefaultInput(controller,hostui,"");
+				return new DefaultInput(controller,"");
 			}
 
 			if (ki.Character == ' ' ||
@@ -113,13 +113,13 @@ namespace net.ninebroadcast {
 			{
 				//controller.resetStatus();
 				controller.oneWindowForward(numericInput);
-				return new DefaultInput(controller,hostui,"");
+				return new DefaultInput(controller,"");
 			}
 
 			if (ki.Character == 'b') {
 				//controller.resetStatus();
 				controller.oneWindowBackward(numericInput);
-				return new DefaultInput(controller,hostui,"");
+				return new DefaultInput(controller,"");
 			}
 
 			if (ki.Character=='z')
@@ -129,7 +129,7 @@ namespace net.ninebroadcast {
 				//  controller.resetStatus();
 				controller.setWindowHeight(numericInput);
 				controller.oneWindowForward(numericInput);
-				return new DefaultInput(controller,hostui,"");
+				return new DefaultInput(controller,"");
 			}
 
 			controller.Alert();
@@ -139,15 +139,15 @@ namespace net.ninebroadcast {
 	}
 	public class ColonInput : LessInput {
 		private string numericInput;
-		public ColonInput(LessController lc, PSHostUserInterface ui, string n) {
+		public ColonInput(LessController lc, string n) {
 			controller = lc;
-			hostui = ui;
 			numericInput = n;
 			controller.Status(" :");
 			//controller.updateStatus(status);
 		}
-		public override LessInput beginParse () { 
-			KeyInfo ki = hostui.RawUI.ReadKey(ReadKeyOptions.NoEcho | ReadKeyOptions.IncludeKeyUp);
+		public override LessInput beginParse () 
+		{ 
+			KeyInfo ki = controller.ReadKey();
 
 			if (ki.Character =='Q' || ki.Character == 'q')
 				return null;
@@ -162,57 +162,56 @@ namespace net.ninebroadcast {
 					filename = filename + ki.Character;
 				}
 				// controller.examineFileNew(filename);
-				return new DefaultInput(controller,hostui,"");
+				return new DefaultInput(controller,"");
 			}
 			if (ki.Character == 'n')
 			{
 				// controller.resetStatus();
 				controller.examineFileNext(numericInput);
-				return new DefaultInput(controller,hostui,"");
+				return new DefaultInput(controller,"");
 			}
 			if (ki.Character == 'p')
 			{
 				//controller.resetStatus();
 				controller.examineFilePrevious(numericInput);
-				return new DefaultInput(controller,hostui,"");
+				return new DefaultInput(controller,"");
 
 			}
 			if (ki.Character == 'x')
 			{
 				//controller.resetStatus();
 				controller.examineFile(numericInput);
-				return new DefaultInput(controller,hostui,"");
+				return new DefaultInput(controller,"");
 			}
 			if (ki.Character == 'd')
 			{
 				//controller.resetStatus();
 				controller.excludeCurrentFile();
-				return new DefaultInput(controller,hostui,"");
+				return new DefaultInput(controller,"");
 			}
 			controller.Alert();
-			return new DefaultInput(controller,hostui,"");
+			return new DefaultInput(controller,"");
 
 		}
 	
 	}
 	public class EscapeInput : LessInput {
 		private string numericInput;
-		public EscapeInput(LessController lc, PSHostUserInterface ui, string n) {
+		public EscapeInput(LessController lc, string n) {
 			controller = lc;
-			hostui = ui;
 			numericInput = n;
 			controller.Status(" ESC");
 		}
 
 		public override LessInput beginParse () { 
-			KeyInfo ki = hostui.RawUI.ReadKey(ReadKeyOptions.NoEcho | ReadKeyOptions.IncludeKeyUp);
+			KeyInfo ki = controller.ReadKey();
 
 			if (ki.Character == 'n') {
 				//controller.resetStatus();
 				controller.findNext("some state variable");
-				return new DefaultInput(controller,hostui,"");
+				return new DefaultInput(controller,"");
 			}
-			return new DefaultInput(controller,hostui,"");
+			return new DefaultInput(controller,"");
 		}
 	}
 }

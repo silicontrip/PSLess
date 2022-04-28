@@ -160,14 +160,18 @@ namespace net.ninebroadcast {
 			{
 				this.Seek(from);
 			}
-			Int64 count = 0;
+
+			Int64 count = 1;
 			string line = "";
+			line = ReadLine(); // EOF anyone?
+
 			while ((count < lineCount) && (line != null))
 			{
-				// needs EOL
-				line = ReadLine(); // EOF anyone?
 				lineList.Add(line);
 				count++;
+
+				// needs EOL
+				line = ReadLine(); // EOF anyone?
 			}
 
 			return lineList.ToArray();

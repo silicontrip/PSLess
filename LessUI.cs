@@ -12,7 +12,6 @@ namespace net.ninebroadcast {
         public ConsoleColor ForegroundStatusColour { get; set; }
         public ConsoleColor BackgroundStatusColour  { get; set; }
 
-
 		public LessDisplay (PSHostUserInterface rui)
 		{
 			this.hostui = rui;
@@ -51,12 +50,18 @@ namespace net.ninebroadcast {
 			foreach (string ll in line)
 				this.hostui.WriteLine(Foreground(),Background(),padLine(ll));
 
-			this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, padLine(StatusLine));
+			//this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, padLine(StatusLine));
+			this.drawStatus(StatusLine);
 		}
 
+// should probably draw Status position for all
         public void drawStatus(string StatusLine) {
+			int Position = StatusLine.Length;
             this.hostui.Write("\r");
             this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, padLine(StatusLine));
+			this.hostui.Write("\r");
+			string truncated = StatusLine.Substring(0,Position);
+            this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, truncated);
         }
 
 		public void clearStatus()
@@ -65,7 +70,7 @@ namespace net.ninebroadcast {
 			this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, padLine("")); // or not inverted
 		}
 
-		public void drawStatusPosition(string StatusLine, int Position)
+		public void drawStatusCursor(string StatusLine, int Position)
 		{
 			this.hostui.Write("\r");
             this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, padLine(StatusLine));

@@ -1,13 +1,13 @@
-
+using System.Management.Automation;
 using System.Management.Automation.Host;
-
+using System;
 
 namespace net.ninebroadcast {
 
 	public abstract class LessInput
 	{
 		protected LessController controller;
-		protected PSHostUserInterface hostui;
+		// protected PSHostUserInterface hostui;
 		public virtual LessInput beginParse() { return null; }
 	}
 
@@ -21,7 +21,7 @@ namespace net.ninebroadcast {
 
 		public override LessInput beginParse () { 
 			// state logic goes here;
-			KeyInfo ki = hostui.RawUI.ReadKey(ReadKeyOptions.NoEcho | ReadKeyOptions.IncludeKeyUp);
+			KeyInfo ki = controller.ReadKey();
 			if (ki.Character == 'Z')
 				return null;
 
@@ -29,6 +29,7 @@ namespace net.ninebroadcast {
 			return new DefaultInput(controller,"");
 		}
 	}
+
 	public class DefaultInput : LessInput {
 
 		private string numericInput;
@@ -56,19 +57,22 @@ namespace net.ninebroadcast {
 				controller.Status(":"+numericInput);
 				ki = controller.ReadKey();
 			}
-			
+
 			char key = ki.Character;
 			int code = ki.VirtualKeyCode;
 			ControlKeyStates control = ki.ControlKeyState;  // this returns no data
 
-			if (key!=0)
+
+			if (key>=' ')
 				code = '\0';
+
+			//Host.UI.WriteDebugLine("key: " + key +"(" + (int)key + ") code: "+code+" control: "+control);
 
 			// change state option
 
 			// check for control key and modify code appropriately
 			// if (ki.modifierFlags)
-
+			//Console.WriteLine("key: " + key +"(" + (int)key + ") code: "+code+" control: "+control);
 
 			if (key == ':') {
 				return new ColonInput(controller,numericInput);
@@ -82,7 +86,7 @@ namespace net.ninebroadcast {
 			if (code==27)
 				return new EscapeInput(controller,numericInput);
 
-			if (key=='=' || code=='g')  // or ^G :f
+			if (key=='=' || key == 7 || code == 'G')  // or ^G :f
 			{
 				// less-help.txt lines 78-141/236 byte 7335/11925 61%  (press RETURN)
 				controller.displayCurrentFileDetails();
@@ -93,37 +97,38 @@ namespace net.ninebroadcast {
 // their behaviour changes when a number is involved.
 //  e  ^E  j  ^N  CR  *  Forward  one line   (or N lines).                                                             
 
-			if (key=='e' || key=='j' || code==13 || code=='e' || code=='n')
+			if (key=='e' || key=='j' || code==13 || code==40 || code=='e' || code=='n')
 			{
 				//controller.resetStatus();
+				// Console.WriteLine("Foreword: " + numericInput);
 				controller.oneLineForward(numericInput);
 				return new DefaultInput(controller,"");
 			}
-//  y  ^Y  k  ^K  ^P  *  Backward one line   (or N lines).                                                             
 
-			if (key=='y' || key=='k' || code=='y' || code=='k' || code == 'p')
+//  y  ^Y  k  ^K  ^P  *  Backward one line   (or N lines).                                                             
+			if (key=='y' || key=='k' || code=='y' || code=='k' || code == 'p' || code==38)
 			{
 				//controller.resetStatus();
 				controller.oneLineBackward(numericInput);
 				return new DefaultInput(controller,"");
 			}
-//  f  ^F  ^V  SPACE  *  Forward  one window (or N lines).                                                             
 
+//  f  ^F  ^V  SPACE  *  Forward  one window (or N lines).                                                             
 			if (key == ' ' || key == 'f' || code=='f' || code=='v')
 			{
 				//controller.resetStatus();
 				controller.oneWindowForward(numericInput);
 				return new DefaultInput(controller,"");
 			}
-//  b  ^B  ESC-v      *  Backward one window (or N lines).                                                             
 
+//  b  ^B  ESC-v      *  Backward one window (or N lines).                                                             
 			if (key == 'b' || code =='b') {
 				//controller.resetStatus();
 				controller.oneWindowBackward(numericInput);
 				return new DefaultInput(controller,"");
 			}
-//  z                 *  Forward  one window (and set window to N).                                                    
 
+//  z                 *  Forward  one window (and set window to N).                                                    
 			if (key=='z')
 			{
 				// reset numericInput 
@@ -133,8 +138,8 @@ namespace net.ninebroadcast {
 				controller.oneWindowForward(numericInput);
 				return new DefaultInput(controller,"");
 			}
-//  w                 *  Backward one window (and set window to N).                                                    
 
+//  w                 *  Backward one window (and set window to N).                                                    
 			if (key=='w')
 			{
 				// reset numericInput 
@@ -144,6 +149,7 @@ namespace net.ninebroadcast {
 				controller.oneWindowBackward("");
 				return new DefaultInput(controller,"");
 			}
+
 //   d  ^D             *  Forward  one half-window (and set half-window to N).                                          
 			if (key=='d' || code=='d')
 			{
@@ -191,10 +197,13 @@ namespace net.ninebroadcast {
 				controller.repaintScreen();
 			}
 
+// please sir I want some more less commands
+
+
 controller.Status ( "" + key +"(" + code + ") / " +control);
 
 			controller.Alert();
-			return this;
+			return new DefaultInput(controller,"");
 
 		}
 	}
@@ -269,6 +278,7 @@ controller.Status ( "" + key +"(" + code + ") / " +control);
 		}
 	
 	}
+
 	public class EscapeInput : LessInput {
 		private string numericInput;
 		public EscapeInput(LessController lc, string n) {
@@ -341,8 +351,7 @@ controller.Status ( "" + key +"(" + code + ") / " +control);
 
 		private void backspace() { ; }
 		private void delete() { ; }
-		private void deleteWord
-		() { ; }
+		private void deleteWord() { ; }
 
 		public override LessInput beginParse () {
 			KeyInfo ki;
@@ -373,6 +382,11 @@ controller.Status ( "" + key +"(" + code + ") / " +control);
 
 			while (code != 13)
 			{
+
+
+// controller.Status ( "" + key +"(" + code + ") / " +control);
+
+
 //  RightArrow ..................... ESC-l ... Move cursor right one character.                                           
 				if (code == 39 || escape == 'l')
 				{ 
@@ -431,7 +445,16 @@ controller.Status ( "" + key +"(" + code + ") / " +control);
 // ctrl-L ................................... Complete filename, list all.
 				if (code == 'l') { ; }
 				// display status line and move cursor... 
-				controller.drawStatusPosition(linePrefix,lineInput,cursorPosition);
+
+				// need to check where cursor is.
+				if (key>=32 && key <= 127) {
+					if (cursorPosition < lineInput.Length) 
+						lineInput = lineInput.Substring(0,cursorPosition) + key + lineInput.Substring(cursorPosition);
+						else
+							lineInput += key;
+					cursorPosition ++;
+				}
+				controller.drawStatusCursor(linePrefix,lineInput,cursorPosition);
 
 				ki = controller.ReadKey();
 				key = ki.Character;

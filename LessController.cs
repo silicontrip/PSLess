@@ -43,18 +43,25 @@ namespace net.ninebroadcast {
 
 		}
 
+		private string[] ReadLine()
+		{
+			string[] window = document.ReadLine(currentLineNumber,windowHeight);
+
+			if (currentColumnNumber == 0)
+				return window;
+
+			string[] padWindow = new string[window.Length];
+
+			int count = 0 ;
+			foreach (string l in window)
+				padWindow[count++] = l.Substring(currentColumnNumber);
+
+			return padWindow;
+		}
+
 		public void repaintScreen() 
 		{ 
-			// display.StatusLine = s;
-
-			string[] window = document.ReadLine(currentLineNumber,windowHeight);
-			//string[] padWindow = new string[window.Length];
-
-			//int count = 0 ;
-
-			// foreach (string l in window)
-			//	padWindow[count++] = padLine(l);
-
+			string[] window = ReadLine();
 			display.draw(window,statusLine);
 		}
 
@@ -139,9 +146,21 @@ namespace net.ninebroadcast {
 				repaintScreen();
 		}
 
-		public void oneLineForward(string moveNumber)
+		private void forward(int move)
 		{
-			moveCurrentLineTo(currentLineNumber + defaultInteger(moveNumber,1));
+			// special case as screen scroll upwards is natural
+			//int move = Int32.Parse(moveNumber);
+			currentLineNumber =  validateLineNumber(currentLineNumber + move); // validate
+			string[] window = document.ReadLine(currentLineNumber+windowHeight,move);
+
+		//Console.WriteLine("count: " + window.Length);
+
+			display.draw(window,statusLine);
+		}
+
+		public void oneLineForward(string moveNumber)  // or multiple lines
+		{
+			forward(defaultInteger(moveNumber,1));
 		}
 
 		public void oneLineBackward(string moveNumber)
@@ -151,7 +170,8 @@ namespace net.ninebroadcast {
 
 		public void oneWindowForward(string moveNumber)
 		{
-			moveCurrentLineTo(currentLineNumber + defaultInteger(moveNumber,windowHeight));
+			//moveCurrentLineTo(currentLineNumber + defaultInteger(moveNumber,windowHeight));
+			forward(defaultInteger(moveNumber,windowHeight));
 		}
 
 		public void oneWindowBackward(string moveNumber)
@@ -161,7 +181,8 @@ namespace net.ninebroadcast {
 
 		public void halfWindowForward()
 		{
-			moveCurrentLineTo(currentLineNumber + windowHalfHeight);
+			// moveCurrentLineTo(currentLineNumber + windowHalfHeight);
+			forward (windowHalfHeight);
 		}
 
 		public void halfWindowBackward()
@@ -189,10 +210,11 @@ namespace net.ninebroadcast {
 		public void examineFile(string moveNumber) { ; }
 		public void excludeCurrentFile() { ; }
 
-		public void drawStatusPosition(string pre,string line,int pos)
+		public void drawStatusCursor(string pre,string line,int pos)
 		{
+			pos += pre.Length;
 			string status = pre + line;
-			display.drawStatusPosition(statusLine,pos);
+			display.drawStatusCursor(status,pos);
 		}
 	}
 }

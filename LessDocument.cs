@@ -161,8 +161,9 @@ namespace net.ninebroadcast {
 				this.Seek(from);
 			}
 
-			Int64 count = 1;
+			Int64 count = 0;
 			string line = "";
+
 			line = ReadLine(); // EOF anyone?
 
 			while ((count < lineCount) && (line != null))

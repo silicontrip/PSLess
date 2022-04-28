@@ -29,25 +29,49 @@ namespace net.ninebroadcast {
 		public int WindowHeight() { return hostui.RawUI.WindowSize.Height; }
 		public int PageHeight() { return hostui.RawUI.WindowSize.Height - 1; }
 
+		private string padLine(string line) 
+		{
+
+			// do something smart with currentColumnNumber
+			// in the controller... not here 
+			
+			// if(currentColumnNumber > 0)
+			//	line = line.Substring(currentColumnNumber, line.Length - currentColumnNumber);
+
+			if (line.Length > WindowWidth())
+				return line.Substring(WindowWidth());
+
+			return line.PadRight(WindowWidth());
+		}
+
 		public void draw (string[] line, string StatusLine)
 		{
 			this.hostui.Write("\r");
 
 			foreach (string ll in line)
-				this.hostui.WriteLine(Foreground(),Background(),ll);
+				this.hostui.WriteLine(Foreground(),Background(),padLine(ll));
 
-			this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, StatusLine);
+			this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, padLine(StatusLine));
 		}
 
         public void drawStatus(string StatusLine) {
             this.hostui.Write("\r");
-            this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, StatusLine);
+            this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, padLine(StatusLine));
         }
 
 		public void clearStatus()
 		{
 			this.hostui.Write("\r");
-			this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, "".PadRight(WindowWidth())); // or not inverted
+			this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, padLine("")); // or not inverted
+		}
+
+		public void drawStatusPosition(string StatusLine, int Position)
+		{
+			this.hostui.Write("\r");
+            this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, padLine(StatusLine));
+			this.hostui.Write("\r");
+			string truncated = StatusLine.Substring(0,Position);
+            this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, truncated);
 		}
 
     }

@@ -48,29 +48,17 @@ namespace net.ninebroadcast {
 			// display.StatusLine = s;
 
 			string[] window = document.ReadLine(currentLineNumber,windowHeight);
-			string[] padWindow = new string[window.Length];
+			//string[] padWindow = new string[window.Length];
 
-			int count = 0 ;
+			//int count = 0 ;
 
-			foreach (string l in window)
-				padWindow[count++] = padLine(l);
+			// foreach (string l in window)
+			//	padWindow[count++] = padLine(l);
 
-			display.draw(padWindow,statusLine);
+			display.draw(window,statusLine);
 		}
 
-		private string padLine(string line) 
-		{
 
-			// do something smart with currentColumnNumber
-
-			if(currentColumnNumber > 0)
-				line = line.Substring(currentColumnNumber, line.Length - currentColumnNumber);
-
-			if (line.Length > windowWidth)
-				return line.Substring(windowWidth);
-
-			return line.PadRight(windowWidth);
-		}
 		private int validateLineNumber(int ln)
 		{
 			// don't move before start of document.
@@ -200,5 +188,11 @@ namespace net.ninebroadcast {
 		public void examineFilePrevious(string moveNumber) { ; }
 		public void examineFile(string moveNumber) { ; }
 		public void excludeCurrentFile() { ; }
+
+		public void drawStatusPosition(string pre,string line,int pos)
+		{
+			string status = pre + line;
+			display.drawStatusPosition(statusLine,pos);
+		}
 	}
 }

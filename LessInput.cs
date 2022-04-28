@@ -352,12 +352,13 @@ controller.Status ( "" + key +"(" + code + ") / " +control);
 		private void backspace() { ; }
 		private void delete() { ; }
 		private void deleteWord() { ; }
+		private void deleteWordLeft() { ; }
 
 		public override LessInput beginParse () {
 			KeyInfo ki;
 			char key ;
 			int code;
-			int escape=0;
+			char escape=(char)0;
 
 			ControlKeyStates control = ki.ControlKeyState;  // this returns no data
 
@@ -369,28 +370,31 @@ controller.Status ( "" + key +"(" + code + ") / " +control);
 			key = ki.Character;
 			code = ki.VirtualKeyCode;
 
-			if (key!='\0')
+			if (key>=32)
 				code = 0;
+
 			if (escapeMode)
 			{
 				escapeMode = false;
-				escape = key | code;
+				escape = (char)(key | code);
 				key = '\0';
 			}
 			if (code == 27)
 				escapeMode = true;
 
-			while (code != 13)
+
+
+			while (key != 13)
 			{
+//			Console.WriteLine("key: (" + (int)key + ") code: "+code+" control: "+control);
+			Console.WriteLine("Key: (" + (int)key + ") code: "+code+" control: "+control+ " escape: "+(int)escape);
 
-
-// controller.Status ( "" + key +"(" + code + ") / " +control);
-
+//controller.Status ( "" + key +"(" + code + ") / " +control);
 
 //  RightArrow ..................... ESC-l ... Move cursor right one character.                                           
 				if (code == 39 || escape == 'l')
 				{ 
-					if (cursorPosition <= lineInput.Length)
+					if (cursorPosition < lineInput.Length)
 						cursorPosition++;
 				}
 
@@ -417,18 +421,24 @@ controller.Status ( "" + key +"(" + code + ") / " +control);
 				if (escape == '$')
 					cursorPosition = lineInput.Length;
 // BACKSPACE ................................ Delete char to left of cursor.
-				if (code == 8)
+
+// Top right key on Mac is 127
+
+				if (key == 8)
 					backspace();
 // DELETE ......................... ESC-x ... Delete char under cursor.
-				if (code == '~')
+				if (key == 127 || escape=='x')
 					delete();
 // ctrl-BACKSPACE   ESC-BACKSPACE ........... Delete word to left of cursor.
 				if (escape == 8)
-					deleteWord();
+					deleteWordLeft();
 // ctrl-DELETE .... ESC-DELETE .... ESC-X ... Delete word under cursor.
 				if (escape=='X')
+					deleteWord();
+
 // ctrl-U ......... ESC (MS-DOS only) ....... Delete entire line.
-				if (escape==27 || code =='u') {
+				if (escape==27 || code == 85) {
+					// Console.WriteLine("erase line");
 					cursorPosition = 0;
 					lineInput = "";
 				}
@@ -459,16 +469,20 @@ controller.Status ( "" + key +"(" + code + ") / " +control);
 				ki = controller.ReadKey();
 				key = ki.Character;
 				code = ki.VirtualKeyCode;
-				escape=0;
-				if (key!='\0')
+
+			//Console.WriteLine("straight outta Keyton: (" + (int)key + ") code: "+code+" control: "+control+ " escape: "+escape);
+
+				escape=(char)0;
+				if (key>=' ') 
 					code = 0;
+
 				if (escapeMode)
 				{
 					escapeMode = false;
-					escape = key | code;
+					escape = (char)(key | code);
 					key = '\0';
 				}
-				if (code == 27)
+				if (key == 27)
 					escapeMode = true;
 			}
 			return null;

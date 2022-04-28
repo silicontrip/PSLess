@@ -21,7 +21,7 @@ namespace net.ninebroadcast {
 
 		private int windowHeight;
 		private int windowWidth;
-
+		private int windowHalfHeight;
 		public LessController (LessDocument doc, LessDisplay ld)
 		{
 			this.document = doc;
@@ -30,6 +30,7 @@ namespace net.ninebroadcast {
 			//string[] statusString = new string[] {this.document.getBaseName()};
 
 			currentLineNumber = 1;
+			currentColumnNumber = 0;
 			//statusInputCount = 0;
 			//statusLine = this.document.getBaseName()
 
@@ -37,24 +38,12 @@ namespace net.ninebroadcast {
 
 			windowWidth = display.WindowWidth();
 			windowHeight = display.WindowHeight();
-			
-			DisplayDocument();
+			windowHalfHeight = windowHeight / 2;
+			repaintScreen();
 
 		}
 
-		public KeyInfo ReadKey()
-		{
-			return display.ReadKey();
-		}
-
-		public void setWindowHeight(string moveNumber)
-		{
-			int newHeight = Int32.Parse(moveNumber);
-			if (newHeight >= 1 && newHeight <= document.Length())
-				windowHeight = newHeight;
-		}
-
-		private void DisplayDocument() 
+		public void repaintScreen() 
 		{ 
 			// display.StatusLine = s;
 
@@ -74,12 +63,39 @@ namespace net.ninebroadcast {
 
 			// do something smart with currentColumnNumber
 
+			if(currentColumnNumber > 0)
+				line = line.Substring(currentColumnNumber, line.Length - currentColumnNumber);
+
 			if (line.Length > windowWidth)
 				return line.Substring(windowWidth);
 
 			return line.PadRight(windowWidth);
 		}
+		private int validateLineNumber(int ln)
+		{
+			// don't move before start of document.
+			// don't move past end of document but allow partial display
 
+			if (ln > document.Length())
+			{
+				Alert(); 
+				return document.Length();
+			}
+			if (ln < 1)
+			{
+				Alert();
+				return 1;
+			}
+			return ln;
+		}
+	
+		private int defaultInteger (string moveNumber, int d)
+		{
+			// weird ass conditional behaviour, numeric overrides its primary function
+			if (moveNumber.Length > 0)
+				return Int32.Parse(moveNumber);
+			return d;
+		}
 // this should only take a single line of text
 /*
 		private void scroll(string s) { 
@@ -87,6 +103,23 @@ namespace net.ninebroadcast {
 			display.draw(line,s);
 		}
 */
+		public KeyInfo ReadKey()
+		{
+			return display.ReadKey();
+		}
+
+		public void setWindowHeight(string moveNumber)
+		{
+			int newHeight = Int32.Parse(moveNumber);
+			if (newHeight >= 1 && newHeight <= document.Length())
+				windowHeight = newHeight;
+		}
+		public void setWindowHalfHeight(string moveNumber)
+		{
+			int newHeight = Int32.Parse(moveNumber);
+			if (newHeight >= 1 && newHeight <= document.Length())
+				windowHalfHeight = newHeight;
+		}
 		public void displayCurrentFileDetails()
 		{
 			// less-help.txt lines 78-141/236 byte 7335/11925 61%  (press RETURN)
@@ -109,38 +142,13 @@ namespace net.ninebroadcast {
 			System.Console.Beep();
 		}
 	
-		private int validateLineNumber(int ln)
-		{
-			// don't move before start of document.
-			// don't move past end of document but allow partial display
-
-			if (ln > document.Length())
-			{
-				Alert(); 
-				return document.Length();
-			}
-			if (ln < 1)
-			{
-				Alert();
-				return 1;
-			}
-			return currentLineNumber;
-		}
-	
-		private int defaultInteger (string moveNumber, int d)
-		{
-			// weird ass conditional behaviour, numeric overrides its primary function
-			if (moveNumber.Length > 0)
-				return Int32.Parse(moveNumber);
-			return d;
-		}
 		public void moveCurrentLineTo(int lineNumber)
 		{
 			int old = currentLineNumber;
 			currentLineNumber = validateLineNumber(lineNumber);
 			statusLine =":";
 			if (currentLineNumber != old)
-				DisplayDocument();
+				repaintScreen();
 		}
 
 		public void oneLineForward(string moveNumber)
@@ -161,6 +169,30 @@ namespace net.ninebroadcast {
 		public void oneWindowBackward(string moveNumber)
 		{
 			moveCurrentLineTo(currentLineNumber - defaultInteger(moveNumber,windowHeight));
+		}
+
+		public void halfWindowForward()
+		{
+			moveCurrentLineTo(currentLineNumber + windowHalfHeight);
+		}
+
+		public void halfWindowBackward()
+		{
+			moveCurrentLineTo(currentLineNumber - windowHalfHeight);
+		}
+
+		public void halfWindowRight(string moveNumber)
+		{
+			currentColumnNumber += defaultInteger(moveNumber, windowWidth / 2);
+		}
+
+		public void halfWindowLeft(string moveNumber)
+		{
+			int numeric = defaultInteger(moveNumber, windowWidth / 2);
+			if (currentColumnNumber - numeric > 0)
+				currentColumnNumber -= numeric;
+			else
+				currentColumnNumber = 0;
 		}
 
 		public void findNext(string somethingNeedDoing) { ; }

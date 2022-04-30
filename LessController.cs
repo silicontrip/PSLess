@@ -22,6 +22,8 @@ namespace net.ninebroadcast {
 		private int windowHeight;
 		private int windowWidth;
 		private int windowHalfHeight;
+		private int windowHalfWidth;
+		private Dictionary<char,string>marks;
 		public LessController (LessDocument doc, LessDisplay ld)
 		{
 			this.document = doc;
@@ -31,6 +33,9 @@ namespace net.ninebroadcast {
 
 			currentLineNumber = 1;
 			currentColumnNumber = 0;
+
+			marks = new Dictionary<char, string>();
+
 			//statusInputCount = 0;
 			//statusLine = this.document.getBaseName()
 
@@ -39,13 +44,14 @@ namespace net.ninebroadcast {
 			windowWidth = display.WindowWidth();
 			windowHeight = display.WindowHeight();
 			windowHalfHeight = windowHeight / 2;
+			windowHalfWidth = windowWidth / 2;
 			repaintScreen();
 
 		}
 
-		private string[] ReadLine()
+		private string[] ReadLine(int cln, int wh)
 		{
-			string[] window = document.ReadLine(currentLineNumber,windowHeight);
+			string[] window = document.ReadLine(cln,wh);
 
 			if (currentColumnNumber == 0)
 				return window;
@@ -57,6 +63,11 @@ namespace net.ninebroadcast {
 				padWindow[count++] = l.Substring(currentColumnNumber);
 
 			return padWindow;
+		}
+
+		private string[] ReadLine()
+		{
+			return ReadLine(currentLineNumber,windowHeight);
 		}
 
 		public void repaintScreen() 
@@ -91,13 +102,7 @@ namespace net.ninebroadcast {
 				return Int32.Parse(moveNumber);
 			return d;
 		}
-// this should only take a single line of text
-/*
-		private void scroll(string s) { 
-			string line = document.ReadLine(currentLineNumber+windowHeight,1);
-			display.draw(line,s);
-		}
-*/
+
 		public KeyInfo ReadKey()
 		{
 			return display.ReadKey();
@@ -137,30 +142,33 @@ namespace net.ninebroadcast {
 			System.Console.Beep();
 		}
 	
-		public void moveCurrentLineTo(int lineNumber)
+		private void moveCurrentLineTo(int lineNumber)
 		{
 			int old = currentLineNumber;
 			currentLineNumber = validateLineNumber(lineNumber);
 			statusLine =":";
-			if (currentLineNumber != old)
-				repaintScreen();
-		}
 
-		private void forward(int move)
-		{
-			// special case as screen scroll upwards is natural
-			//int move = Int32.Parse(moveNumber);
-			currentLineNumber =  validateLineNumber(currentLineNumber + move); // validate
-			string[] window = document.ReadLine(currentLineNumber+windowHeight,move);
+			int dirLines = currentLineNumber - old;
 
-		//Console.WriteLine("count: " + window.Length);
+			if (dirLines==0)
+				return;
+			// automatically handle foreward and backward movement optimally
 
+			if (dirLines > 0 && dirLines < windowHeight)
+			{
+				string[] windowLines = ReadLine(currentLineNumber+windowHeight,dirLines);
+				display.draw(windowLines,statusLine);
+				return;
+			}
+
+			string[] window = ReadLine();
 			display.draw(window,statusLine);
 		}
 
+
 		public void oneLineForward(string moveNumber)  // or multiple lines
 		{
-			forward(defaultInteger(moveNumber,1));
+			moveCurrentLineTo (currentLineNumber + defaultInteger(moveNumber,1));
 		}
 
 		public void oneLineBackward(string moveNumber)
@@ -171,7 +179,7 @@ namespace net.ninebroadcast {
 		public void oneWindowForward(string moveNumber)
 		{
 			//moveCurrentLineTo(currentLineNumber + defaultInteger(moveNumber,windowHeight));
-			forward(defaultInteger(moveNumber,windowHeight));
+			moveCurrentLineTo (currentLineNumber +defaultInteger(moveNumber,windowHeight));
 		}
 
 		public void oneWindowBackward(string moveNumber)
@@ -182,7 +190,7 @@ namespace net.ninebroadcast {
 		public void halfWindowForward()
 		{
 			// moveCurrentLineTo(currentLineNumber + windowHalfHeight);
-			forward (windowHalfHeight);
+			moveCurrentLineTo (currentLineNumber + windowHalfHeight);
 		}
 
 		public void halfWindowBackward()
@@ -192,29 +200,181 @@ namespace net.ninebroadcast {
 
 		public void halfWindowRight(string moveNumber)
 		{
-			currentColumnNumber += defaultInteger(moveNumber, windowWidth / 2);
+			windowHalfWidth = defaultInteger(moveNumber, windowHalfWidth);
+			currentColumnNumber += windowHalfWidth;
 		}
 
 		public void halfWindowLeft(string moveNumber)
 		{
-			int numeric = defaultInteger(moveNumber, windowWidth / 2);
-			if (currentColumnNumber - numeric > 0)
-				currentColumnNumber -= numeric;
+			windowHalfWidth = defaultInteger(moveNumber, windowHalfWidth);
+			if (currentColumnNumber - windowHalfWidth > 0)
+				currentColumnNumber -= windowHalfWidth;
 			else
 				currentColumnNumber = 0;
 		}
 
-		public void findNext(string somethingNeedDoing) { ; }
+		public void findNext(string somethingNeedDoing) {
+			//  ESC-n             *  Repeat previous search, spanning files.
+			; 
+		}
 		public void examineFileNext(string moveNumber) { ; }
 		public void examineFilePrevious(string moveNumber) { ; }
 		public void examineFile(string moveNumber) { ; }
 		public void excludeCurrentFile() { ; }
 
+	
+		public void SearchForward(string stimes, string search)
+		{
+			int times = defaultInteger(stimes, 1);
+			lastSearch = search;
+			string firstChar = search.Substring(0,1);
+
+			if (firstChar == "!")
+			{
+				;
+			} else if (firstChar == "*") { ; }
+			else if (firstChar == "@") { ; }
+			else { ; }
+
+		}
+
+		public void SearchForwardAgain(string stimes)
+		{
+			SearchForward(stimes,lastSearch);
+		}
+
+		public void SearchBackward(string stimes, string search)
+		{
+			int times = defaultInteger(stimes, 1);
+			lastSearch = search;
+			string firstChar = search.Substring(0,1);
+
+			if (firstChar == "!")
+			{
+				;
+			} else if (firstChar == "*") { ; }
+			else if (firstChar == "@") { ; }
+			else { ; }
+
+		}
+
+		public void SearchBackwardAgain(string stimes)
+		{
+			SearchForward(stimes,lastSearch);
+		}
+
+
 		public void drawStatusCursor(string pre,string line,int pos)
 		{
+
+		Console.WriteLine("\n\n pre: " + pre + " line: " + line + " position: " + pos + "\n\n");
+
+
 			pos += pre.Length;
 			string status = pre + line;
 			display.drawStatusCursor(status,pos);
 		}
+
+		public void setMark(char mark)
+		{
+			marks[mark] = ""+currentLineNumber;
+			// clear off prompt
+		}
+		public void gotoMark(char mark)
+		{
+			string newLine = marks[mark];
+			int line = defaultInteger(newLine,currentLineNumber);
+			moveCurrentLineTo(line);
+		}
+
+		public void moveToStart(string ll)
+		{
+			int lineNumber = defaultInteger(ll,0);
+			moveCurrentLineTo(lineNumber);
+		}
+
+		public void moveToEnd(string ll)
+		{
+			int lineNumber = defaultInteger(ll,0);
+			moveCurrentLineTo(document.Length());
+		}
+
+		public void movePercent(string pp)
+		{
+			int per = defaultInteger(pp,0);
+			int lineNumber = document.Length() * per / 100;
+			moveCurrentLineTo(lineNumber);
+		}
+
+// funny how I don't know what feature a command has until trying to implement it...
+// I had no idea what a tag was and I seriously doubt I'll ever use one
+/*
+       -ttag or --tag=tag
+              The -t option, followed immediately by a TAG, will edit the file containing that tag.  For this to work, tag information must be available; for example, there may be a file in  the
+              current directory called "tags", which was previously built by ctags (1) or an equivalent command.  If the environment variable LESSGLOBALTAGS is set, it is taken to be the name of
+              a command compatible with global (1), and that command is executed to find the tag.  (See http://www.gnu.org/software/global/global.html).  The -t option may also be specified from
+              within less (using the - command) as a way of examining a new file.  The command ":t" is equivalent to specifying -t from within less.
+*/
+		public void gotoPreviousTag(string pp)
+		{ 
+			; // unimplemented
+		}
+
+		public void gotoNextTag(string pp)
+		{ 
+			; // unimplemented
+		}
+
+		private int lineFind (string line, char inc, char dec)
+		{
+			int count = 0;
+			foreach (char  cc in line)
+			{
+				if (cc==inc)
+					count++;
+				if (cc==dec)
+					count--;
+			}
+			return count;
+		}
+
+		private void stackedMatchMove(char b1, char b2, int start, int direction)
+		{
+			int searchPos = start;
+			string thisLine = document.ReadLine(searchPos);
+			int stack = lineFind(thisLine,b1,b2);
+			while (stack>0)
+			{
+				searchPos += direction;
+				thisLine = document.ReadLine(searchPos);
+				stack += lineFind(thisLine,b1,b2);
+			}
+			moveCurrentLineTo(searchPos);
+		}
+
+		public void findClose(string num, char key)
+		{
+			// check currentLine for key
+			// count instances of matching brackets
+
+			if (key == '{')
+				stackedMatchMove('{','}',currentLineNumber,1);
+			if (key == '[')
+				stackedMatchMove('[',']',currentLineNumber,1);
+			if (key == '(')
+				stackedMatchMove('(',')',currentLineNumber,1);
+
+		}
+
+		public void findOpen(string num, char key)
+		{
+			if (key == '}')
+				stackedMatchMove('}','{',currentLineNumber+windowHeight,-1);
+			if (key == ']')
+				stackedMatchMove(']','[',currentLineNumber+windowHeight,-1);
+			if (key == ')')
+				stackedMatchMove(')','(',currentLineNumber+windowHeight,-1);
+		}
+
 	}
 }

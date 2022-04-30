@@ -122,6 +122,12 @@ namespace net.ninebroadcast {
 			return true;
 		}
 
+		public string ReadLine(Int64 line)
+		{
+			Seek(line);
+			return ReadLine();
+		}
+
 		public string ReadLine()
 		{
 			// return null if nothing read.

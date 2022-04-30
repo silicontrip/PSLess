@@ -11,6 +11,7 @@ namespace net.ninebroadcast {
 		public virtual LessInput beginParse() { return null; }
 	}
 
+// Handle ZZ
 	public class ExitInput : LessInput {
 
 		public ExitInput (LessController lc, string n) {
@@ -50,7 +51,9 @@ namespace net.ninebroadcast {
 			// include delete and ^U
 			// there is a whole section at the bottom of the help document
 			// detailing the available line editing commands.
+			// implementation in the LineInput class
 
+// handle backspace
 			while (ki.Character >='0' && ki.Character <='9') 
 			{
 				numericInput = numericInput + ki.Character;
@@ -60,8 +63,7 @@ namespace net.ninebroadcast {
 
 			char key = ki.Character;
 			int code = ki.VirtualKeyCode;
-			ControlKeyStates control = ki.ControlKeyState;  // this returns no data
-
+			ControlKeyStates control = ki.ControlKeyState;  // this returns no data on Mac
 
 			if (key>=' ')
 				code = '\0';
@@ -88,8 +90,12 @@ namespace net.ninebroadcast {
 
 			if (key=='=' || key == 7 || code == 'G')  // or ^G :f
 			{
+				// example line:
 				// less-help.txt lines 78-141/236 byte 7335/11925 61%  (press RETURN)
 				controller.displayCurrentFileDetails();
+				// TODO: Press return Input
+				// return new ReturnInput(new DefaultInput(controller,""));
+				// seems like less doesn't follow this requirement
 				return new DefaultInput(controller,"");
 			}	
 
@@ -185,6 +191,11 @@ namespace net.ninebroadcast {
 
 			if (key=='F')
 			{
+				// swith to tail mode
+				//new DefaultInput(controller,"");
+
+				// Waiting for data... (interrupt to abort)
+				// ctrl-c returns to less control.
 				// controller.foreverForward();
 				;
 			}
@@ -195,12 +206,101 @@ namespace net.ninebroadcast {
 	        if (key=='R' || key=='r' || code=='r' || code=='l')
 			{
 				controller.repaintScreen();
+				return new DefaultInput(controller,"");
 			}
 
 // please sir I want some more less commands
 
+			if (key == '/') 
+			{
+				LineInput readSearch = new LineInput(controller,"/");
+				readSearch.beginParse();
 
-controller.Status ( "" + key +"(" + code + ") / " +control);
+				string search = readSearch.getLine();
+				controller.SearchForward(numericInput,search);
+				return new DefaultInput(controller,"");
+			}
+
+			if (key == '?') 
+			{
+				LineInput readSearch = new LineInput(controller,"/");
+				readSearch.beginParse();
+
+				string search = readSearch.getLine();
+				controller.SearchBackward(numericInput,search);
+				return new DefaultInput(controller,"");
+			}
+
+			if (key == 'n')
+			{
+				controller.SearchForwardAgain(numericInput);
+				return new DefaultInput(controller,"");
+			}
+
+			if (key == 'N')
+			{
+				controller.SearchBackwardAgain(numericInput);
+				return new DefaultInput(controller,"");
+			}
+
+			if (key == 'g' || key == '<')
+			{
+				controller.moveToStart(numericInput);
+				return new DefaultInput(controller,"");
+			}
+
+			if (key == 'g' || key == '<')
+			{
+				controller.moveToEnd(numericInput);
+				return new DefaultInput(controller,"");
+			}
+
+			if (key == 'p' || key == '%')
+			{
+				controller.movePercent(numericInput);
+				return new DefaultInput(controller,"");
+			}
+
+			if (key == 't')
+			{
+				controller.gotoNextTag(numericInput);
+				return new DefaultInput(controller,"");
+			}
+
+			if (key == 'T')
+			{
+				controller.gotoPreviousTag(numericInput);
+				return new DefaultInput(controller,"");
+			}
+
+			if (key == '{' || key == '(' || key == '[')
+			{
+				controller.findClose(numericInput, key);
+				return new DefaultInput(controller,"");
+			}
+
+			if (key == '}' || key == ')' || key == ']')
+			{
+				controller.findOpen(numericInput,key);
+				return new DefaultInput(controller,"");
+			}
+
+			if (key =='m')
+			{
+				// get key letter.
+				char letter = '\0';
+				controller.setMark (letter);
+			}
+
+			if (key =='\'')
+			{
+				// get key letter.
+				char letter = '\0';
+				controller.gotoMark (letter);  // special case for ' letter
+			}
+
+
+// controller.Status ( "" + key +"(" + code + ") / " +control);
 
 			controller.Alert();
 			return new DefaultInput(controller,"");
@@ -234,7 +334,7 @@ controller.Status ( "" + key +"(" + code + ") / " +control);
 				readFileName.beginParse();
 
 				filename = readFileName.getLine();
-
+				//  Press (RETURN)
 				// controller.examineFileNew(filename);
 				return new DefaultInput(controller,"");
 			}
@@ -332,16 +432,39 @@ controller.Status ( "" + key +"(" + code + ") / " +control);
 	public class LineInput : LessInput {
 		private string lineInput;
 		private string linePrefix;
+		private int cursorPosition;
+
+
+// might need to be a singleton, for history...
 		public LineInput(LessController lc, string n) {
 			controller = lc;
 			linePrefix = n;
 			lineInput = "";
+			cursorPosition = 0;
+
 			controller.Status(linePrefix);
 		}
 
 		private void moveWordForward()
 		{
-			;  // it's a kind of magic
+			// next character after 1 space or more
+			// it's a kind of magic
+			int searchPosition = cursorPosition;
+			// Console.WriteLine("b4 position: " + searchPosition + " length: "+lineInput.Length);
+
+			if (searchPosition < lineInput.Length-1)
+			{
+				while ((lineInput.Substring(searchPosition,1) != " ") && searchPosition < lineInput.Length-1) { searchPosition++; }
+				// Console.WriteLine("new position after letter: " + searchPosition + " length: "+lineInput.Length);
+
+				cursorPosition = searchPosition;
+			}
+			if (searchPosition < lineInput.Length-1)
+			{
+				while ((lineInput.Substring(searchPosition,1) == " ") && searchPosition < lineInput.Length-1) { searchPosition++; }
+				// Console.WriteLine("new position after space: " + searchPosition + " length: "+lineInput.Length);
+				cursorPosition = searchPosition;
+			}
 		}
 
 		private void moveWordBackward()
@@ -349,8 +472,13 @@ controller.Status ( "" + key +"(" + code + ") / " +control);
 			;  // it's a kind of magic
 		}
 
-		private void backspace() { ; }
-		private void delete() { ; }
+		private void backspace() { 
+			lineInput = lineInput.Substring(cursorPosition); 
+		}
+		private void delete() { 
+			if (cursorPosition < lineInput.Length-1)
+				lineInput = lineInput.Substring(cursorPosition+1); 
+		}
 		private void deleteWord() { ; }
 		private void deleteWordLeft() { ; }
 
@@ -363,31 +491,37 @@ controller.Status ( "" + key +"(" + code + ") / " +control);
 			ControlKeyStates control = ki.ControlKeyState;  // this returns no data
 
 			bool escapeMode = false;
-			int cursorPosition = 0;
+			//int cursorPosition = 0;
 
 
 			ki = controller.ReadKey();
 			key = ki.Character;
 			code = ki.VirtualKeyCode;
 
-			if (key>=32)
+			if (key>=32 && key <127)
 				code = 0;
-
+	// we know that escape mode isnt active when priming the loop
+/*
 			if (escapeMode)
 			{
 				escapeMode = false;
 				escape = (char)(key | code);
 				key = '\0';
 			}
+*/
 			if (code == 27)
 				escapeMode = true;
 
-
-
 			while (key != 13)
 			{
+
+//				Console.WriteLine("\n\n TOP key: " + key + " pos: " + cursorPosition + " len: " + lineInput.Length + " line: "+ lineInput+ "\n\n");
+
 //			Console.WriteLine("key: (" + (int)key + ") code: "+code+" control: "+control);
-			Console.WriteLine("Key: (" + (int)key + ") code: "+code+" control: "+control+ " escape: "+(int)escape);
+//				if (cursorPosition < lineInput.Length)
+//					Console.WriteLine("Key: (" + (int)key + ") code: "+code+" control: "+control+ " escape: "+(int)escape + " char: "+lineInput.Substring(cursorPosition,1));
+//				else
+//					Console.WriteLine("Key: (" + (int)key + ") code: "+code+" control: "+control+ " escape: "+(int)escape);
 
 //controller.Status ( "" + key +"(" + code + ") / " +control);
 
@@ -397,6 +531,8 @@ controller.Status ( "" + key +"(" + code + ") / " +control);
 					if (cursorPosition < lineInput.Length)
 						cursorPosition++;
 				}
+//Console.WriteLine("\n\n RIGHTARROW key: " + key + " pos: " + cursorPosition + " len: " + lineInput.Length + " line: "+ lineInput+ "\n\n");
+
 
 // LeftArrow ...................... ESC-h ... Move cursor left one character.                                            
 				if (code == 37 || escape == 'h')
@@ -404,31 +540,50 @@ controller.Status ( "" + key +"(" + code + ") / " +control);
 					if (cursorPosition > 0)
 						cursorPosition--;
 				}
+//Console.WriteLine("\n\n LEFTARROW key: " + key + " pos: " + cursorPosition + " len: " + lineInput.Length + " line: "+ lineInput+ "\n\n");
+
+
 // ctrl-RightArrow  ESC-RightArrow  ESC-w ... Move cursor right one word.
-				if (escape == 39 || escape == 'w') 
+				if (escape == 119 || escape == 'w') 
 					moveWordForward();  // there is no spoon
-				 
+						
+//Console.WriteLine("\n\n RIGHTWORD key: " + key + " pos: " + cursorPosition + " len: " + lineInput.Length + " line: "+ lineInput+ "\n\n");
+		 
 						// to be stateful or not to be generic that is the question
 
 // ctrl-LeftArrow   ESC-LeftArrow   ESC-b ... Move cursor left one word.                                                 
-				if (escape == 37 || escape == 'b')
+				if (escape == 98 || escape == 'b')
 					moveWordBackward();
 						// what she ^^^ said
+//Console.WriteLine("\n\n LEFTWORD key: " + key + " pos: " + cursorPosition + " len: " + lineInput.Length + " line: "+ lineInput+ "\n\n");
+						
 // HOME ........................... ESC-0 ... Move cursor to start of line.  
 				if (escape == '0')
 					cursorPosition = 0;
+//Console.WriteLine("\n\n HOME key: " + key + " pos: " + cursorPosition + " len: " + lineInput.Length + " line: "+ lineInput+ "\n\n");	
+
 // END ............................ ESC-$ ... Move cursor to end of line.
 				if (escape == '$')
 					cursorPosition = lineInput.Length;
+
+//Console.WriteLine("\n\n END key: " + key + " pos: " + cursorPosition + " len: " + lineInput.Length + " line: "+ lineInput+ "\n\n");
 // BACKSPACE ................................ Delete char to left of cursor.
 
 // Top right key on Mac is 127
-
-				if (key == 8)
+// RDP from linux to windows is 8 (assume windows is 8)
+				if (key == 8) {
+					if (cursorPosition == 0) 
+						return null;
 					backspace();
+				}
+//	Console.WriteLine("\n\n BACKSPACE key: " + key + " pos: " + cursorPosition + " len: " + lineInput.Length + " line: "+ lineInput+ "\n\n");
 // DELETE ......................... ESC-x ... Delete char under cursor.
 				if (key == 127 || escape=='x')
-					delete();
+				{
+					if (cursorPosition == 0) return null;
+					backspace();
+				}
+					//delete();
 // ctrl-BACKSPACE   ESC-BACKSPACE ........... Delete word to left of cursor.
 				if (escape == 8)
 					deleteWordLeft();
@@ -438,7 +593,7 @@ controller.Status ( "" + key +"(" + code + ") / " +control);
 
 // ctrl-U ......... ESC (MS-DOS only) ....... Delete entire line.
 				if (escape==27 || code == 85) {
-					// Console.WriteLine("erase line");
+					Console.WriteLine("\nerase line\n");
 					cursorPosition = 0;
 					lineInput = "";
 				}
@@ -456,15 +611,24 @@ controller.Status ( "" + key +"(" + code + ") / " +control);
 				if (code == 'l') { ; }
 				// display status line and move cursor... 
 
+				// Console.WriteLine("\n\nBEFORE  key: " + key + " pos: " + cursorPosition + " len: " + lineInput.Length + " line: "+ lineInput+ "\n\n");
+
 				// need to check where cursor is.
 				if (key>=32 && key <= 127) {
 					if (cursorPosition < lineInput.Length) 
 						lineInput = lineInput.Substring(0,cursorPosition) + key + lineInput.Substring(cursorPosition);
-						else
-							lineInput += key;
+					else
+						lineInput = lineInput + key;
 					cursorPosition ++;
 				}
+
+				//Console.WriteLine("\n\n AFTER key: " + key + " pos: " + cursorPosition + " len: " + lineInput.Length + " line: "+ lineInput+ "\n\n");
+
+
 				controller.drawStatusCursor(linePrefix,lineInput,cursorPosition);
+
+				//Console.WriteLine("\n\n STATUS key: " + key + " pos: " + cursorPosition + " len: " + lineInput.Length + " line: "+ lineInput+ "\n\n");
+
 
 				ki = controller.ReadKey();
 				key = ki.Character;

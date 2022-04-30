@@ -19,7 +19,8 @@ namespace net.ninebroadcast {
             BackgroundStatusColour = ConsoleColor.Black;
         }
 
-		public KeyInfo ReadKey() { return hostui.RawUI.ReadKey(ReadKeyOptions.NoEcho | ReadKeyOptions.IncludeKeyUp); }
+// the shift keyup (released after colon) is being processed
+		public KeyInfo ReadKey() { return hostui.RawUI.ReadKey(ReadKeyOptions.NoEcho | ReadKeyOptions.IncludeKeyDown); }
 		public ConsoleColor Background() { return hostui.RawUI.BackgroundColor; }
 		public ConsoleColor Foreground() { return hostui.RawUI.ForegroundColor; }
 
@@ -72,6 +73,7 @@ namespace net.ninebroadcast {
 
 		public void drawStatusCursor(string StatusLine, int Position)
 		{
+			// Console.WriteLine("\n\n Status: " + StatusLine + " position: " + Position + "\n\n");
 			this.hostui.Write("\r");
             this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, padLine(StatusLine));
 			this.hostui.Write("\r");

@@ -18,6 +18,7 @@ namespace net.ninebroadcast {
 
 		private string lastSearch;
 		private string statusLine;
+		private string highlight;
 
 		private int windowHeight;
 		private int windowWidth;
@@ -45,6 +46,7 @@ namespace net.ninebroadcast {
 			windowHeight = display.WindowHeight();
 			windowHalfHeight = windowHeight / 2;
 			windowHalfWidth = windowWidth / 2;
+			highlight = "";
 			repaintScreen();
 
 		}
@@ -53,29 +55,45 @@ namespace net.ninebroadcast {
 		{
 			string[] window = document.ReadLine(cln,wh);
 
-			if (currentColumnNumber == 0)
-				return window;
+//but where's the cheese, err padding
+		//	if (currentColumnNumber == 0)
+		//		return window;
 
 			string[] padWindow = new string[window.Length];
 
 			int count = 0 ;
 			foreach (string l in window)
-				padWindow[count++] = l.Substring(currentColumnNumber);
+			{
+				// string padl = l.PadLeft()
+				//I was sure I added the window truncation and padding to this class somewhere.
+				string subl= l.Substring(currentColumnNumber);
+				// I have altered the view, pray I don't alter it further
+				// this window view is getting worse all the time.
+				if (subl.Length > windowWidth)
+					subl= l.Substring(0,windowWidth);
+
+			//	padWindow[count++]  = "" + subl.Length + " " + subl.PadRight(windowWidth,' ');
+				padWindow[count++] = subl.PadRight(windowWidth,' ');
+			}
+
+			// padWindow[count-1] = "Pad trunc: " + windowWidth;
+
+			Status("Pad trunc: " + windowWidth+" :");
+//Console.WriteLine("\nPad trunc: " + display.WindowWidth() + "\n");
 
 			return padWindow;
 		}
 
 		private string[] ReadLine()
 		{
-			return ReadLine(currentLineNumber,windowHeight);
+			return ReadLine(currentLineNumber,windowHeight-1);
 		}
 
 		public void repaintScreen() 
 		{ 
-			string[] window = ReadLine();
-			display.draw(window,statusLine);
+			string[] window = this.ReadLine();
+			this.drawWindow(window,statusLine);
 		}
-
 
 		private int validateLineNumber(int ln)
 		{
@@ -133,8 +151,11 @@ namespace net.ninebroadcast {
 
 		public void Status(string s)
 		{
-			statusLine = s;
-			display.drawStatus(statusLine);
+			if (s != null)
+			{
+				statusLine = s;
+				display.drawStatus(statusLine);
+			}
 		}
 
 		public void Alert()
@@ -142,8 +163,25 @@ namespace net.ninebroadcast {
 			System.Console.Beep();
 		}
 	
+		private void drawWindow (string[] page,string status)
+		{
+
+			// Console.WriteLine("highlight: '"+highlight+"' status " + status );
+
+			// TODO: handle multiple matches per line
+			if (highlight.Length > 0)
+				display.drawHighlight(highlight,page,status);
+			else
+				display.draw(page,status);
+
+		}
+
 		private void moveCurrentLineTo(int lineNumber)
 		{
+
+			// this whole method may be off by one.
+			// Console.WriteLine("moveCurrentLine To " + lineNumber + " From "+currentLineNumber + "\n\n");
+
 			int old = currentLineNumber;
 			currentLineNumber = validateLineNumber(lineNumber);
 			statusLine =":";
@@ -153,16 +191,17 @@ namespace net.ninebroadcast {
 			if (dirLines==0)
 				return;
 			// automatically handle foreward and backward movement optimally
+			// Console.WriteLine("moveCurrentLine direction " + dirLines + " windowHeight "+windowHeight + "\n\n");
 
 			if (dirLines > 0 && dirLines < windowHeight)
 			{
 				string[] windowLines = ReadLine(currentLineNumber+windowHeight,dirLines);
-				display.draw(windowLines,statusLine);
+				this.drawWindow(windowLines,statusLine);
 				return;
 			}
 
 			string[] window = ReadLine();
-			display.draw(window,statusLine);
+			this.drawWindow(window,statusLine);
 		}
 
 
@@ -222,20 +261,122 @@ namespace net.ninebroadcast {
 		public void examineFile(string moveNumber) { ; }
 		public void excludeCurrentFile() { ; }
 
-	
+		private bool lineContains(int lineNumber, string find)
+		{
+			//Console.WriteLine("\n\n contains: '" + find + "' line: " + lineNumber + "\n\n");
+			string lineString = document.ReadLine(lineNumber);
+			return lineString.Contains(find);
+		}
+
+		private int searchFromTo(int fromNumber, int toNumber, string search, bool match)
+		{
+			//Console.WriteLine("\nSearch range from: " + fromNumber + " to: " + toNumber +"\n\n");
+			int step = 1;
+			if (toNumber < fromNumber)
+				step = -1;
+
+			for (int ln = fromNumber; ln != toNumber; ln+=step)
+			{
+				if (this.lineContains(ln,search) == match) // just like a chocolate milkshake only it's XNOR
+				{
+					//Console.WriteLine("\nLine contains: " + ln + "\n");
+					return ln;
+				}
+			}
+			return -1;
+		}
+
+		private int forwardSearchWhole(int numberOfTimes, string searchFor, bool match)
+		{
+			int foundLine = 0;
+
+			// Console.WriteLine("forward search 1: " + numberOfTimes + ", for: " + searchFor + ", match: " + match);
+
+			while (numberOfTimes>=1 && foundLine >= 0)
+			{
+				foundLine = this.searchFromTo(this.currentLineNumber+1,document.Length(),searchFor,match);
+				if (foundLine >= 0)
+					numberOfTimes--;
+			}
+			// Console.WriteLine("forward search 2: " + numberOfTimes + ", found: " + foundLine);
+
+			if (foundLine >= 0)
+				return foundLine;
+
+			foundLine = 0;
+			while (numberOfTimes>=1 && foundLine >= 0)
+			{
+				foundLine = this.searchFromTo(1,this.currentLineNumber-1,searchFor,match);
+				if (foundLine >= 0)
+					numberOfTimes--;
+			}
+		//	Console.WriteLine("forward search 3: " + numberOfTimes + ", found: " + foundLine);
+
+//			if (foundLine >= 0)
+				return foundLine;
+
+			//return -1; // found line will be negative anyway
+		}
+
 		public void SearchForward(string stimes, string search)
 		{
-			int times = defaultInteger(stimes, 1);
-			lastSearch = search;
-			string firstChar = search.Substring(0,1);
-
-			if (firstChar == "!")
+ 
+			if (search.Length > 0)
 			{
-				;
-			} else if (firstChar == "*") { ; }
-			else if (firstChar == "@") { ; }
-			else { ; }
+				//Console.WriteLine("\n\nI don't alwatys search, but when I do, I don't find anything\n");
+				lastSearch = search;
+				string firstChar = search.Substring(0,1);
+				int numberOfTimes = this.defaultInteger(stimes,1);
 
+				if (firstChar == "!")
+				{
+					// not find.
+					string notSearch = search.Substring(1);
+					// search from here to end, then start to here
+
+					int fl = this.forwardSearchWhole(numberOfTimes,notSearch,false);
+					if (fl > 0)
+					{ 
+						//this.currentLineNumber = fl;
+						this.highlight = "";
+						//Console.WriteLine("\n\nmove currentLineNumber to: "+fl);
+						this.moveCurrentLineTo(fl);
+						return;
+					}
+					// even if it is found less than the number of times
+					statusLine = "pattern not found";
+					// Console.WriteLine("\n\n not found, not moving \n\n");
+
+					this.repaintScreen();
+				} 
+				else if (firstChar == "*") 
+				{ 
+					; 
+				} 
+				else if (firstChar == "@") 
+				{ 
+					; 
+				}
+				else
+				{ 
+					// Console.WriteLine("\nsearching forward for whole word\n");
+					int fl = this.forwardSearchWhole(numberOfTimes,search,true);
+					if (fl > 0)
+					{ 
+						// this.currentLineNumber = fl;
+						this.highlight = search;
+					//	Console.WriteLine("\n found at: " + fl + "\n\n");
+						this.moveCurrentLineTo(fl);
+						return;
+					}
+					// not found. even if it is found less than the number of times
+					this.highlight = "";
+					statusLine = "pattern not found";
+					//Console.WriteLine("\n not found\n\n");
+
+					this.repaintScreen();
+				}
+			}
 		}
 
 		public void SearchForwardAgain(string stimes)
@@ -263,12 +404,10 @@ namespace net.ninebroadcast {
 			SearchForward(stimes,lastSearch);
 		}
 
-
 		public void drawStatusCursor(string pre,string line,int pos)
 		{
 
-		Console.WriteLine("\n\n pre: " + pre + " line: " + line + " position: " + pos + "\n\n");
-
+			//Console.WriteLine("\n\n pre: " + pre + " line: " + line + " position: " + pos + "\n\n");
 
 			pos += pre.Length;
 			string status = pre + line;

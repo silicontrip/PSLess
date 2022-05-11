@@ -20,11 +20,11 @@ namespace net.ninebroadcast {
 		public LessDisplay (PSHostUserInterface rui)
 		{
 			this.hostui = rui;
-            ForegroundStatusColour = ConsoleColor.Yellow;
-            BackgroundStatusColour = (ConsoleColor)(-1);
+            ForegroundStatusColour = ConsoleColor.White;
+            BackgroundStatusColour = rui.RawUI.BackgroundColor;
 
-			ForegroundContentColour = (ConsoleColor)(-1);
-			BackgroundContentColour = (ConsoleColor)(-1);
+			ForegroundContentColour = rui.RawUI.ForegroundColor;
+			BackgroundContentColour = rui.RawUI.BackgroundColor;
 
 			ForegroundHighlightColour = ConsoleColor.Yellow;
 			BackgroundHighlightColour = ConsoleColor.Black;
@@ -38,14 +38,15 @@ namespace net.ninebroadcast {
 		public ConsoleColor Background() { return BackgroundContentColour; }
 		public ConsoleColor Foreground() { return ForegroundContentColour; }
 
-		public ConsoleColor HilightBackground() { return BackgroundHighlightColour; }
-		public ConsoleColor HilightForeground() { return ForegroundHighlightColour; }
+		public ConsoleColor HighlightBackground() { return BackgroundHighlightColour; }
+		public ConsoleColor HighlightForeground() { return ForegroundHighlightColour; }
 
 		public Size WindowSize() { return hostui.RawUI.WindowSize; }
 		public int WindowWidth() { return hostui.RawUI.WindowSize.Width; }
 		public int WindowHeight() { return hostui.RawUI.WindowSize.Height; }
 		public int PageHeight() { return hostui.RawUI.WindowSize.Height - 1; }
 
+// i think this needs to be handled by the LessController
 		private string padLine(string line) 
 		{
 
@@ -78,16 +79,23 @@ namespace net.ninebroadcast {
 			// multiple matches... ?
 			this.hostui.Write("\r");
 
+			// this.hostui.Write("\r colour:" + Foreground()+ "/" + Background() );
+
 			foreach (string ll in line)
 			{
+
 				string ss = this.padLine(ll);
+
+				int oLen = ll.Length;
+				int pLen = ss.Length;
+
 				if (ss.Contains(match))
 				{
-					int endPos=-1;
+					int endPos=0;
 					string sub;
 
 					int idx = ss.IndexOf(match);
-					while (idx > -1)
+					while (endPos < ss.Length && idx != -1)
 					{
 /*					
 					Console.WriteLine("highlight found: " +idx);
@@ -97,32 +105,44 @@ namespace net.ninebroadcast {
 */
 				//	Console.WriteLine("fg: " + Foreground() + "  bg: "+Background() );
 
-						sub = ss.Substring(0,idx); 
-						this.hostui.Write(Foreground(),Background(),sub);
-						sub = ss.Substring(idx,match.Length); 
-						this.hostui.Write(HilightForeground(),HilightBackground(),sub);
+						// string deets = "orig: " + oLen + " sub: " + pLen + " wid: " + WindowWidth();
+
+						sub = ss.Substring(0,idx);
+						if (sub.Length > 0)
+							this.hostui.Write(Foreground(),Background(), sub);
+
+						// sub = ss.Substring(idx,match.Length); 
+						
+						this.hostui.Write(HighlightForeground(),HighlightBackground(),match);
+
 						endPos = idx+match.Length;
 						if (endPos < ss.Length)
-							idx = ss.IndexOf(match,endPos);
-						else
-							idx = -1;
+						{	
+							ss = ss.Substring(endPos);
+							idx = ss.IndexOf(match);
+							endPos=0;
+						}
 					}
 					// due to the above conditions this will never evaluate to false
 					// but the compiler thinks that endPos still could be unassigned
 					// if endPos isn't assigned a value outside of the while loop
 
 					//if (endPos > -1) {
-						sub = ss.Substring(endPos);
-						this.hostui.Write(Foreground(),Background(),sub);
-						this.hostui.Write(Foreground(),Background(),"\n");
+						if (endPos < ss.Length)
+						{	
+							sub = ss.Substring(endPos);
+							this.hostui.Write(Foreground(),Background(),sub);
+						}
+						// this.hostui.Write(Foreground(),Background(),"\n");
 					//}
 // multiple matches per line?
 				} else {
 
 					//Console.WriteLine("No highlight found");
 
-					this.hostui.WriteLine(Foreground(),Background(),ss);
+					this.hostui.Write(Foreground(),Background(),ss);
 				}
+				this.hostui.WriteLine("");
 			}
 
 			this.drawStatus(StatusLine);
@@ -133,6 +153,8 @@ namespace net.ninebroadcast {
         public void drawStatus(string StatusLine) {
 			int Position = StatusLine.Length;
             this.hostui.Write("\r");
+			//this.hostui.Write("\r colour:" + Foreground()+ "/" + Background() );
+
             this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, padLine(StatusLine));
 			this.hostui.Write("\r");
 			string truncated = StatusLine.Substring(0,Position);
@@ -147,6 +169,7 @@ namespace net.ninebroadcast {
 
 		public void drawStatusCursor(string StatusLine, int Position)
 		{
+			//this.Position = Position;
 			//Console.WriteLine("\n\n Status: " + StatusLine + " (" + StatusLine.Length + ") position: " + Position + "\n\n");
 			this.hostui.Write("\r");
             this.hostui.Write(ForegroundStatusColour, BackgroundStatusColour, padLine(StatusLine));

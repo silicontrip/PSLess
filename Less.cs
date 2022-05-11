@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.Collections;
 using System.IO;
 using System.Management.Automation;
 using System.Management.Automation.Host;
@@ -30,10 +30,17 @@ namespace net.ninebroadcast {
         }
         private string path="";
 
+		[Parameter(ValueFromPipeline = true)]
+        public PSObject InputObject
+		{
+			get { return inputObject; }
+			set { inputObject = value; }
+		}
+		private PSObject inputObject=null;
+
 //https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface
 
-        protected override void BeginProcessing()
-        {
+
 
 			//PSHostUserInterface ui = Host.UI;
 			// 
@@ -106,23 +113,34 @@ namespace net.ninebroadcast {
 		// start peeling these off into a UI class
 		// started
 
-
+        protected override void BeginProcessing()
+        {
 			string current = Directory.GetCurrentDirectory();
 			SessionState ss = new SessionState();
 			Directory.SetCurrentDirectory(ss.Path.CurrentFileSystemLocation.Path);
 
 			// TextDocument[] documentList = new TextDocument[];
 
-			LessDocument doc;
+			// needs a document controller
+			// less can skip forward and back between Files
+
+			// LessDocumentController docControl = new LessDocumentController();
+
+			LessDocument doc = new LessDocument();
 
 			if (!String.IsNullOrEmpty(path))
 			{
 				try {
 					// multiple TextDocument instances for multiple paths
+					// foreach (string thisPath in path)
 					doc = new LessDocument(path);
+
+					// docControl.AddDocument(doc);
 
 					LessDisplay lcd = new LessDisplay(Host.UI);
 					LessController lc = new LessController(doc,lcd);  // TextDocument as array
+					//LessController lc = new LessController(docControl,lcd);  // TextDocument as array
+
 					LessInput lkc = new DefaultInput(lc,""); 
 					// looks like we need more UI methods than RawUI
 
@@ -142,11 +160,51 @@ namespace net.ninebroadcast {
 				}
 			}
 
-
-
-
 			Directory.SetCurrentDirectory(current);
-
 		}
 	}
+
+    [Cmdlet(VerbsData.Out, "test")]
+	public class outtest : PSCmdlet
+    {
+
+		//int sizex;
+		//int sizey;
+		ArrayList stringl;
+
+        public
+        outtest()
+        {
+            // empty, provided per design guidelines.
+        }
+
+        [Parameter(Position = 0, ValueFromPipeline = true)]
+        public PSObject InputObject
+		{
+			get { return inputObject; }
+			set { inputObject = value; }
+		}
+		private PSObject inputObject=null;
+
+		protected override void BeginProcessing()
+		{
+			Host.UI.WriteLine("BeginProcessing");
+			stringl = new ArrayList();
+		}
+
+		protected override void ProcessRecord()
+		{			
+			// Host.UI.WriteLine("process record");
+			string line = InputObject.ToString();
+			stringl.Add(line);
+			// Host.UI.WriteLine(line);
+		}
+
+		protected override void EndProcessing()
+		{
+			foreach (string li in stringl)
+				Host.UI.WriteLine(li);
+		}
+	}
+
  }

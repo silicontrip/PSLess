@@ -79,7 +79,10 @@ namespace net.ninebroadcast {
 			Int64? pos = offsets[line];
 			// handle lines that arent in the offset array.
 			if (pos.HasValue)
+			{
+				// Console.WriteLine("\n\n Seeking to line: " + line +"/" +pos);
 				documentFile.Seek(pos.Value,SeekOrigin.Begin);
+			}
 			else
 			{
 				while ((currentLine != line) && (SeekNextLine()));

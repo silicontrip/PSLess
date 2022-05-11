@@ -312,6 +312,7 @@ namespace net.ninebroadcast
 				// get key letter.
 				char letter = '\0';
 				controller.setMark (letter);
+				return new DefaultInput(controller,"");
 			}
 // M<letter>            Mark the current bottom line with <letter>.
 //   '<letter>            Go to a previously marked position.
@@ -321,12 +322,20 @@ namespace net.ninebroadcast
 				// get key letter.
 				char letter = '\0';
 				controller.gotoMark (letter);  // special case for ' letter
+				return new DefaultInput(controller,"");
+
 			}
 
 // controller.Status ( "" + key +"(" + code + ") / " +control);
 
 			controller.Alert();
-			return new DefaultInput(controller,"");
+
+			string keyDecode = "" +(int)code + " ";
+			keyDecode = keyDecode + "" + (int)key + " ";
+			if (key >= 32 && key < 127)
+				keyDecode = keyDecode + "" + key;
+
+			return new DefaultInput(controller,keyDecode);
 
 		}
 	}
@@ -542,8 +551,8 @@ namespace net.ninebroadcast
 
 			bool escapeMode = false;
 			//int cursorPosition = 0;
-
-			ki = controller.ReadKey();
+			controller.Status(linePrompt);
+			ki = controller.ReadKey();  // blocks, so requires prompt
 			key = ki.Character;
 			code = ki.VirtualKeyCode;
 

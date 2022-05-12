@@ -541,13 +541,13 @@ namespace net.ninebroadcast
 		private void deleteWord() { ; }
 		private void deleteWordLeft() { ; }
 
-		public override LessInput beginParse () {
-			KeyInfo ki;
+		public override LessInput beginParse () 
+		{
 			char key ;
 			int code;
 			char escape=(char)0;
+			KeyInfo ki;
 
-			ControlKeyStates control = ki.ControlKeyState;  // this returns no data on mono
 
 			bool escapeMode = false;
 			//int cursorPosition = 0;
@@ -555,6 +555,7 @@ namespace net.ninebroadcast
 			ki = controller.ReadKey();  // blocks, so requires prompt
 			key = ki.Character;
 			code = ki.VirtualKeyCode;
+			ControlKeyStates control = ki.ControlKeyState;  // this returns no data on mono
 
 			if (key>=32 && key <127)
 				code = 0;

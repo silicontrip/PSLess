@@ -144,6 +144,7 @@ namespace net.ninebroadcast {
 				cc = documentFile.ReadByte();
 				//Console.WriteLine("ReadLine byte: " +(char)cc + "(" + cc + ")");
 			}
+
 			if (cc < 0)
 				return null;
 			//sb.AppendLine();
@@ -163,27 +164,32 @@ namespace net.ninebroadcast {
 		public string[] ReadLine (Int64 from, int lineCount)
 		{
 			List<string> lineList = new List<string>();
-			//StringBuilder lineBuffer = new StringBuilder();
-			// TODO: is seekable?
-			if (currentLine != from) 
+			if (from < this.Length())
 			{
-				this.Seek(from);
-			}
 
-			Int64 count = 0;
-			string line = "";
+				//Console.WriteLine("\n document read from: " + from + " < length: " + this.Length() + " count: " + lineCount + "\n");
 
-			line = ReadLine(); // EOF anyone?
+				//StringBuilder lineBuffer = new StringBuilder();
+				// TODO: is seekable?
+				if (currentLine != from) 
+				{
+					this.Seek(from);
+				}
 
-			while ((count < lineCount) && (line != null))
-			{
-				lineList.Add(line);
-				count++;
+				Int64 count = 0;
+				string line = "";
+
+				line = ReadLine(); // EOF anyone?
+
+				while ((count < lineCount) && (line != null))
+				{
+					lineList.Add(line);
+					count++;
 
 				// needs EOL
-				line = ReadLine(); // EOF anyone?
+					line = ReadLine(); // EOF anyone?
+				}
 			}
-
 			return lineList.ToArray();
 		}
     }

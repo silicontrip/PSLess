@@ -64,9 +64,13 @@ namespace net.ninebroadcast {
 			int count = 0 ;
 			foreach (string l in window)
 			{
+				string subl;
 				// string padl = l.PadLeft()
 				//I was sure I added the window truncation and padding to this class somewhere.
-				string subl= l.Substring(currentColumnNumber);
+				if (currentColumnNumber < l.Length)
+					 subl= l.Substring(currentColumnNumber);
+				else
+					subl="";
 				// I have altered the view, pray I don't alter it further
 				// this window view is getting worse all the time.
 				if (subl.Length > windowWidth)
@@ -240,6 +244,7 @@ namespace net.ninebroadcast {
 		public void halfWindowRight(string moveNumber)
 		{
 			windowHalfWidth = defaultInteger(moveNumber, windowHalfWidth);
+			repaintScreen();
 			currentColumnNumber += windowHalfWidth;
 		}
 
@@ -250,6 +255,8 @@ namespace net.ninebroadcast {
 				currentColumnNumber -= windowHalfWidth;
 			else
 				currentColumnNumber = 0;
+			repaintScreen();
+
 		}
 
 		public void findNext(string somethingNeedDoing) {

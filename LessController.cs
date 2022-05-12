@@ -13,6 +13,10 @@ namespace net.ninebroadcast {
 		// private string commandLine;
 		// private string prefix;
 
+		// current line number... top or bottom of window...
+		// thinking it was the top
+		// document deems line 1 at top of document.
+
 		private int currentLineNumber;
 		private int currentColumnNumber;
 
@@ -53,24 +57,31 @@ namespace net.ninebroadcast {
 
 		private string[] ReadLine(int cln, int wh)
 		{
+
+			//Console.WriteLine("\nreading from document, line: " + cln + " height: " + wh + "\n");
+
 			string[] window = document.ReadLine(cln,wh);
+
+			//Console.WriteLine("\nreturns first: " + window[0] + " length: " + window.Length +"\n");
+
+
+			// Console.WriteLine("\nFrom: " + cln + " to: " + wh + "\n");
 
 //but where's the cheese, err padding
 		//	if (currentColumnNumber == 0)
 		//		return window;
 
-			string[] padWindow = new string[window.Length];
+			string[] padWindow = new string[wh];
 
 			int count = 0 ;
 			foreach (string l in window)
 			{
-				string subl;
+				string subl = l;
 				// string padl = l.PadLeft()
 				//I was sure I added the window truncation and padding to this class somewhere.
 				if (currentColumnNumber < l.Length)
 					 subl= l.Substring(currentColumnNumber);
-				else
-					subl="";
+
 				// I have altered the view, pray I don't alter it further
 				// this window view is getting worse all the time.
 				if (subl.Length > windowWidth)
@@ -80,9 +91,14 @@ namespace net.ninebroadcast {
 				padWindow[count++] = subl.PadRight(windowWidth,' ');
 			}
 
+			while (count < wh)
+				padWindow[count++] = "~".PadRight(windowWidth,' ');
+	
+
+
 			// padWindow[count-1] = "Pad trunc: " + windowWidth;
 
-			Status("Pad trunc: " + windowWidth+" :");
+			// Status("Pad trunc: " + windowWidth+" :");
 //Console.WriteLine("\nPad trunc: " + display.WindowWidth() + "\n");
 
 			return padWindow;
@@ -90,7 +106,7 @@ namespace net.ninebroadcast {
 
 		private string[] ReadLine()
 		{
-			return ReadLine(currentLineNumber,windowHeight-1);
+			return this.ReadLine(currentLineNumber,windowHeight-1);
 		}
 
 		public void repaintScreen() 
@@ -119,10 +135,14 @@ namespace net.ninebroadcast {
 	
 		private int defaultInteger (string moveNumber, int d)
 		{
-			// weird ass conditional behaviour, numeric overrides its primary function
-			if (moveNumber.Length > 0)
-				return Int32.Parse(moveNumber);
-			return d;
+			// weird ass conditional behaviour, numeric overrides its primary function\
+			try {
+				if (moveNumber.Length > 0)
+					return Int32.Parse(moveNumber);
+				return d;
+			} catch (FormatException e) {
+				return d;
+			}
 		}
 
 		public KeyInfo ReadKey()
@@ -197,9 +217,25 @@ namespace net.ninebroadcast {
 			// automatically handle foreward and backward movement optimally
 			// Console.WriteLine("moveCurrentLine direction " + dirLines + " windowHeight "+windowHeight + "\n\n");
 
+			// the idea here is that we use lines immedately below the window, to scroll the disply up
+			// so we need from the old position (+1) to the new position
+			// but only if the number of lines to scroll is less than the window height
+
 			if (dirLines > 0 && dirLines < windowHeight)
 			{
-				string[] windowLines = ReadLine(currentLineNumber+windowHeight,dirLines);
+
+				//Console.WriteLine("Scroll Current Line To " + currentLineNumber + " by "+dirLines + "\n\n");
+
+				// why would this be currentLineNumber + windowHeight ?
+				// because we add to the bottom of the window
+				int cline = old+windowHeight+1;
+
+				string[] windowLines = this.ReadLine(cline,dirLines);
+
+
+				//Console.WriteLine("ReadLine: " + cline + " returns first line: "+windowLines[0] + "\n\n");
+
+
 				this.drawWindow(windowLines,statusLine);
 				return;
 			}
@@ -297,7 +333,7 @@ namespace net.ninebroadcast {
 		{
 			int foundLine = 0;
 
-			// Console.WriteLine("forward search 1: " + numberOfTimes + ", for: " + searchFor + ", match: " + match);
+			//Console.WriteLine("forward search 1: " + numberOfTimes + ", for: " + searchFor + ", match: " + match);
 
 			while (numberOfTimes>=1 && foundLine >= 0)
 			{
@@ -305,7 +341,7 @@ namespace net.ninebroadcast {
 				if (foundLine >= 0)
 					numberOfTimes--;
 			}
-			// Console.WriteLine("forward search 2: " + numberOfTimes + ", found: " + foundLine);
+			//Console.WriteLine("forward search 2: " + numberOfTimes + ", found: " + foundLine);
 
 			if (foundLine >= 0)
 				return foundLine;
@@ -317,12 +353,36 @@ namespace net.ninebroadcast {
 				if (foundLine >= 0)
 					numberOfTimes--;
 			}
-		//	Console.WriteLine("forward search 3: " + numberOfTimes + ", found: " + foundLine);
+			//Console.WriteLine("forward search 3: " + numberOfTimes + ", found: " + foundLine);
 
-//			if (foundLine >= 0)
+			return foundLine;
+
+		}
+
+		private int backwardSearchWhole(int numberOfTimes, string searchFor, bool match)
+		{
+			int foundLine = 0;
+
+			while (numberOfTimes>=1 && foundLine >= 0)
+			{
+				foundLine = this.searchFromTo(this.currentLineNumber-1,1,searchFor,match);
+				if (foundLine >= 0)
+					numberOfTimes--;
+			}
+
+
+			if (foundLine >= 0)
 				return foundLine;
 
-			//return -1; // found line will be negative anyway
+			foundLine = 0;
+			while (numberOfTimes>=1 && foundLine >= 0)
+			{
+				foundLine = this.searchFromTo(document.Length(),this.currentLineNumber+1,searchFor,match);
+				if (foundLine >= 0)
+					numberOfTimes--;
+			}
+
+			return foundLine;
 		}
 
 		public void SearchForward(string stimes, string search)
@@ -393,22 +453,56 @@ namespace net.ninebroadcast {
 
 		public void SearchBackward(string stimes, string search)
 		{
-			int times = defaultInteger(stimes, 1);
+			int numberOfTimes = defaultInteger(stimes, 1);
 			lastSearch = search;
 			string firstChar = search.Substring(0,1);
 
 			if (firstChar == "!")
 			{
-				;
-			} else if (firstChar == "*") { ; }
-			else if (firstChar == "@") { ; }
-			else { ; }
+							// not find.
+				string notSearch = search.Substring(1);
+				// search from here to end, then start to here
+
+				int fl = this.backwardSearchWhole(numberOfTimes,notSearch,false);
+				if (fl > 0)
+				{ 
+					//this.currentLineNumber = fl;
+					this.highlight = "";
+					//Console.WriteLine("\n\nmove currentLineNumber to: "+fl);
+					this.moveCurrentLineTo(fl);
+					return;
+				}
+				// even if it is found less than the number of times
+				statusLine = "pattern not found";
+				// Console.WriteLine("\n\n not found, not moving \n\n");
+
+				this.repaintScreen();
+			} else if (firstChar == "*") { ; 
+			} else if (firstChar == "@") { ; 
+			} else { 
+				// Console.WriteLine("\nsearching forward for whole word\n");
+				int fl = this.backwardSearchWhole(numberOfTimes,search,true);
+				if (fl > 0)
+				{ 
+					// this.currentLineNumber = fl;
+					this.highlight = search;
+				//	Console.WriteLine("\n found at: " + fl + "\n\n");
+					this.moveCurrentLineTo(fl);
+					return;
+				}
+				// not found. even if it is found less than the number of times
+				this.highlight = "";
+				statusLine = "pattern not found";
+				//Console.WriteLine("\n not found\n\n");
+
+				this.repaintScreen();;
+			}
 
 		}
 
 		public void SearchBackwardAgain(string stimes)
 		{
-			SearchForward(stimes,lastSearch);
+			SearchBackward(stimes,lastSearch);
 		}
 
 		public void drawStatusCursor(string pre,string line,int pos)
@@ -435,14 +529,15 @@ namespace net.ninebroadcast {
 
 		public void moveToStart(string ll)
 		{
-			int lineNumber = defaultInteger(ll,0);
+			int lineNumber = defaultInteger(ll,1);
 			moveCurrentLineTo(lineNumber);
 		}
 
 		public void moveToEnd(string ll)
 		{
-			int lineNumber = defaultInteger(ll,0);
-			moveCurrentLineTo(document.Length());
+			int endLine = 2 + document.Length() - windowHeight ;
+			int lineNumber = defaultInteger(ll,endLine);
+			moveCurrentLineTo(lineNumber);
 		}
 
 		public void movePercent(string pp)

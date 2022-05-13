@@ -498,8 +498,11 @@ namespace net.ninebroadcast
 
 //  ESC-^F <c1> <c2>  *  Find close bracket <c2>.
 //  ESC-^B <c1> <c2>  *  Find open bracket <c1> 
+
+// testing this in less uses ESC-m not ESC-M
+
 //  ESC-M<letter>        Clear a mark.
-			if (ki.Character == 'M') 
+			if (ki.Character == 'm') 
 			{
 				char letter = '\0';
 				KeyInfo mm = controller.ReadKey();

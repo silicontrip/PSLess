@@ -7,7 +7,19 @@ using System.Management.Automation.Host;
 
 namespace net.ninebroadcast {
 
-	public class LessDocument {
+
+	public abstract class LessDocument
+	{
+		public abstract int Length();
+		public abstract string FileName(); 
+		public abstract string ReadLine(int line);
+		public abstract string[] ReadLine (int from, int lineCount);
+
+	}
+
+
+	public class LessDocumentFile : LessDocument
+	{
 
 		private Dictionary<Int64,Int64> offsets;
 		private string filename;
@@ -18,7 +30,7 @@ namespace net.ninebroadcast {
 		private Int64 currentLine;  //used for line seeking.
 		private int length;
 
-		public LessDocument()
+		public LessDocumentFile()
 		{
 		//	buffer = new List<string>();
 			this.filename="";
@@ -26,7 +38,7 @@ namespace net.ninebroadcast {
 		//	unsaved=false;
 		}
 
-		public LessDocument(string filename)
+		public LessDocumentFile(string filename)
 		{
 			readWriteEncoding = new ASCIIEncoding();
 			// try {
@@ -45,8 +57,8 @@ namespace net.ninebroadcast {
 			countLines();
 		}
 
-		public int Length () { return length; }
-		public string FileName() { return filename; }
+		public override int Length () { return length; }
+		public override string FileName() { return filename; }
 
 		private void countLines() { 
 			length = 0;
@@ -74,7 +86,7 @@ namespace net.ninebroadcast {
 			offsets[currentLine] = documentFile.Position;
 		}
 */
-		public void Seek(Int64 line)
+		public void Seek(int line)
 		{
 			Int64? pos = offsets[line];
 			// handle lines that arent in the offset array.
@@ -125,7 +137,7 @@ namespace net.ninebroadcast {
 			return true;
 		}
 
-		public string ReadLine(Int64 line)
+		public override string ReadLine(int line)
 		{
 			Seek(line);
 			return ReadLine();
@@ -161,7 +173,7 @@ namespace net.ninebroadcast {
 			return sb.ToString();
 		}
 
-		public string[] ReadLine (Int64 from, int lineCount)
+		public override string[] ReadLine (int from, int lineCount)
 		{
 			List<string> lineList = new List<string>();
 			if (from < this.Length())
@@ -193,4 +205,34 @@ namespace net.ninebroadcast {
 			return lineList.ToArray();
 		}
     }
+
+	public class LessDocumentPipeline : LessDocument
+	{
+
+		List<string>puffer; // they are much cuter than buffers
+
+		public LessDocumentPipeline()
+		{
+			puffer = new List<string>();
+		}
+
+		public override int Length() { return puffer.Count; }
+		public override string FileName() { return ":"; }
+
+		public override string ReadLine(int l)
+		{
+			return puffer[l];
+		}
+
+		public override string[] ReadLine(int l, int count)
+		{
+			return puffer.GetRange(l,count).ToArray();
+		}
+
+		public void AddLine (string l)
+		{
+			puffer.Add(l);
+		}
+	}
+
 }

@@ -12,8 +12,7 @@ namespace net.ninebroadcast {
     public class less : PSCmdlet
     {
 
-		//int sizex;
-		//int sizey;
+		LessDocumentPipeline _document;
 
         public
         less()
@@ -115,9 +114,6 @@ namespace net.ninebroadcast {
 
         protected override void BeginProcessing()
         {
-			string current = Directory.GetCurrentDirectory();
-			SessionState ss = new SessionState();
-			Directory.SetCurrentDirectory(ss.Path.CurrentFileSystemLocation.Path);
 
 			// TextDocument[] documentList = new TextDocument[];
 
@@ -126,22 +122,34 @@ namespace net.ninebroadcast {
 
 			// LessDocumentController docControl = new LessDocumentController();
 
-			LessDocument doc = new LessDocument();
+//			LessDocument doc = new LessDocument();
 
 			if (!String.IsNullOrEmpty(path))
 			{
+				_document = null;
 				try {
+
+					string current = Directory.GetCurrentDirectory();
+					SessionState ss = new SessionState();
+					Directory.SetCurrentDirectory(ss.Path.CurrentFileSystemLocation.Path);
+
 					// multiple TextDocument instances for multiple paths
 					// foreach (string thisPath in path)
-					doc = new LessDocument(path);
+
+					// document handling in the Controller class.
+					// doc = new LessDocument(path);
 
 					// docControl.AddDocument(doc);
 
 					LessDisplay lcd = new LessDisplay(Host.UI);
-					LessController lc = new LessController(doc,lcd);  // TextDocument as array
+					LessController lc = new LessController(lcd);  // TextDocument as array
+
+					lc.AddDocument(path);
 					//LessController lc = new LessController(docControl,lcd);  // TextDocument as array
 
-					LessInput lkc = new DefaultInput(lc,""); 
+					LessInput lkc = new DefaultInput(lc,"");
+
+					lc.firstDocument();
 					// looks like we need more UI methods than RawUI
 
 					// lc.displayDocument();
@@ -152,16 +160,44 @@ namespace net.ninebroadcast {
 					while (lkc != null) {
 						 lkc = lkc.beginParse(); 
 					}
+					Directory.SetCurrentDirectory(current);
 
-					doc.Close();
+				//	doc.Close();
 				} catch (Exception e) {
 					Host.UI.WriteLine(e.Message);
 					Host.UI.WriteLine(e.StackTrace);
 				}
+
+			} else {
+				// set up for PipeLine Input
+				_document = new LessDocumentPipeline();
 			}
 
-			Directory.SetCurrentDirectory(current);
 		}
+
+		protected override void ProcessRecord()
+		{
+			if (_document != null && inputObject != null)
+			{
+				_document.AddLine(inputObject.ToString());
+			}
+		}
+
+		protected override void EndProcessing()
+		{
+			if (_document != null)
+			{
+				LessDisplay lcd = new LessDisplay(Host.UI);
+				LessController lc = new LessController(lcd);
+				lc.SetDocument(_document);
+				LessInput lkc = new DefaultInput(lc,"");
+				while (lkc != null) {
+					lkc = lkc.beginParse(); 
+				}
+			}
+
+		}
+
 	}
 
     [Cmdlet(VerbsData.Out, "test")]
@@ -178,7 +214,7 @@ namespace net.ninebroadcast {
             // empty, provided per design guidelines.
         }
 
-        [Parameter(Position = 0, ValueFromPipeline = true)]
+        [Parameter(ValueFromPipeline = true)]
         public PSObject InputObject
 		{
 			get { return inputObject; }
@@ -186,24 +222,48 @@ namespace net.ninebroadcast {
 		}
 		private PSObject inputObject=null;
 
+        [Parameter(Position = 0)]
+
+        public string Path
+		{
+			get { return p; }
+			set { p = value; }
+		}
+		private string p="";
+
 		protected override void BeginProcessing()
 		{
 			Host.UI.WriteLine("BeginProcessing");
-			stringl = new ArrayList();
+			Host.UI.WriteLine("path: " + p);
+
+			if (p.Length ==0)	
+				stringl = new ArrayList();
+
+/*
+			if (inputObject != null)
+			{
+				Host.UI.WriteLine("begin: " + inputObject.ToString());
+			}
+*/
 		}
 
 		protected override void ProcessRecord()
-		{			
-			// Host.UI.WriteLine("process record");
-			string line = InputObject.ToString();
-			stringl.Add(line);
+		{
+			if (p.Length == 0)
+			{
+				Host.UI.WriteLine("process record");
+				string line = InputObject.ToString();
+				stringl.Add(line);
+			}
 			// Host.UI.WriteLine(line);
 		}
 
 		protected override void EndProcessing()
 		{
-			foreach (string li in stringl)
-				Host.UI.WriteLine(li);
+			if (p.Length ==0)
+				if (stringl.Count >0)
+					foreach (string li in stringl)
+						Host.UI.WriteLine(li);
 		}
 	}
 

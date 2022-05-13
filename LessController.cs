@@ -7,7 +7,10 @@ using System.Management.Automation.Host;
 namespace net.ninebroadcast {
 	public class LessController {
 
+		private List<string>fileList;
 		private LessDocument document;
+
+		private int currentFile;
 		private LessDisplay display;
 		// private PSHostUserInterface hostui;
 		// private string commandLine;
@@ -29,30 +32,135 @@ namespace net.ninebroadcast {
 		private int windowHalfHeight;
 		private int windowHalfWidth;
 		private Dictionary<char,string>marks;
-		public LessController (LessDocument doc, LessDisplay ld)
+		public LessController (LessDisplay ld)
 		{
-			this.document = doc;
+			// this.document = doc;
 			this.display = ld;
+
+			this.fileList = new List<string>();
+			// this.fileList[0] = doc.FileName();
+			this.currentFile = 0;
 
 			//string[] statusString = new string[] {this.document.getBaseName()};
 
-			currentLineNumber = 1;
-			currentColumnNumber = 0;
+			this.currentLineNumber = 1;
+			this.currentColumnNumber = 0;
 
-			marks = new Dictionary<char, string>();
+			this.marks = new Dictionary<char, string>();
 
 			//statusInputCount = 0;
 			//statusLine = this.document.getBaseName()
 
-			Status(this.document.getBaseName());
+			// Status(this.document.getBaseName());
 
-			windowWidth = display.WindowWidth();
-			windowHeight = display.WindowHeight();
-			windowHalfHeight = windowHeight / 2;
-			windowHalfWidth = windowWidth / 2;
-			highlight = "";
-			repaintScreen();
+			this.windowWidth = display.WindowWidth();
+			this.windowHeight = display.WindowHeight();
+			this.windowHalfHeight = windowHeight / 2;
+			this.windowHalfWidth = windowWidth / 2;
+			this.highlight = "";
+			//repaintScreen();
 
+		}
+
+		public void SetDocument(LessDocument document)
+		{
+			this.document = document;
+			currentLineNumber = 1;
+			currentColumnNumber = 0;
+			this.Status(":");
+			this.repaintScreen();
+		}
+
+		private void changeDocument(int docNumber)
+		{
+			if (docNumber >=0 && docNumber < fileList.Count && currentFile != docNumber)
+			{
+				currentFile = docNumber;
+				string fname = fileList[currentFile];
+				document = new LessDocumentFile(fname);
+				// all the other resets?
+				currentLineNumber = 1;
+				currentColumnNumber = 0;
+				this.Status(fname);
+				this.repaintScreen();
+			}
+		}
+		// add document
+		public void AddDocument(string filename)
+		{
+			// check path.............
+			string absoluteFn = Path.GetFullPath(filename);
+
+			string path = Path.GetDirectoryName(absoluteFn);
+			string card = Path.GetFileName(absoluteFn);
+			//Console.WriteLine(String.Format("LocalIO ExpandPath file: {0}",card));
+
+			string[] fse; //  = {p2};
+
+	        fse = Directory.GetFileSystemEntries(path,card); 
+
+			foreach (string fn in fse)
+			{
+				try {
+					FileStream documentFile = File.Open(fn,FileMode.Open,FileAccess.Read);
+
+					documentFile.Close();
+
+					if (currentFile == fileList.Count)
+					{
+						fileList.Add(filename);
+					}
+					else
+						fileList.Insert(currentFile,filename);
+
+					currentFile++;
+
+				} catch {
+					;
+				}
+			}
+
+		}
+		// remove document
+
+		public void RemoveDocument()
+		{
+			if (fileList.Count > 1)
+			{
+				fileList.RemoveAt(currentFile);
+				if (currentFile>0)
+					currentFile--;
+
+				this.changeDocument(currentFile);
+			}	
+		
+		}
+
+		// first document 
+
+		public void firstDocument()
+		{
+			this.changeDocument(0);
+		}
+		// last document
+
+		public void lastDocument()
+		{
+			this.changeDocument(fileList.Count-1);
+		}
+
+		// next document
+
+		public void nextDocument()
+		{
+			this.changeDocument(currentFile+1);
+		}
+
+		// previous document
+
+		public void previousDocument()
+		{
+			this.changeDocument(currentFile-1);
 		}
 
 		private string[] ReadLine(int cln, int wh)
@@ -140,7 +248,7 @@ namespace net.ninebroadcast {
 				if (moveNumber.Length > 0)
 					return Int32.Parse(moveNumber);
 				return d;
-			} catch (FormatException e) {
+			} catch (FormatException) {
 				return d;
 			}
 		}
@@ -513,6 +621,15 @@ namespace net.ninebroadcast {
 			pos += pre.Length;
 			string status = pre + line;
 			display.drawStatusCursor(status,pos);
+		}
+
+
+		public void clearMark(char mark)
+		{
+			//marks[mark] = ""+currentLineNumber;
+			marks.Remove(mark);
+			// no message if not found
+			// clear off prompt
 		}
 
 		public void setMark(char mark)

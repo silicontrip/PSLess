@@ -78,7 +78,7 @@ namespace net.ninebroadcast
 
 			char key = ki.Character;
 			int code = ki.VirtualKeyCode;
-			ControlKeyStates control = ki.ControlKeyState;  // this returns no data on Mac
+			ControlKeyStates control = ki.ControlKeyState;  // this returns no data on Mac (or mono maybe?)
 
 			if (key>=' ')
 				code = '\0';
@@ -149,7 +149,7 @@ namespace net.ninebroadcast
 				return new DefaultInput(controller,"");
 			}
 
-//  z                 *  Forward  one window (and set window to N).                                                    
+//  z                 *  Forward one window (and set window to N).                                                    
 			if (key=='z')
 			{
 				// reset numericInput 
@@ -311,7 +311,10 @@ namespace net.ninebroadcast
 			{
 				// get key letter.
 				char letter = '\0';
-				controller.setMark (letter);
+				KeyInfo mm = controller.ReadKey();
+				letter = mm.Character;
+				if (letter >= 'a' && letter <= 'z')
+					controller.setMark (letter);
 				return new DefaultInput(controller,"");
 			}
 // M<letter>            Mark the current bottom line with <letter>.
@@ -321,7 +324,10 @@ namespace net.ninebroadcast
 			{
 				// get key letter.
 				char letter = '\0';
-				controller.gotoMark (letter);  // special case for ' letter
+				KeyInfo mm = controller.ReadKey();
+				letter = mm.Character;
+				if ((letter >= 'a' && letter <= 'z') || letter == '\'' || letter == '^' || letter == '$')
+					controller.gotoMark (letter);  // special case for ' letter
 				return new DefaultInput(controller,"");
 
 			}
@@ -335,7 +341,8 @@ namespace net.ninebroadcast
 			if (key >= 32 && key < 127)
 				keyDecode = keyDecode + "" + key;
 
-			return new DefaultInput(controller,keyDecode);
+			controller.Status(keyDecode);
+			return new DefaultInput(controller,"");
 
 		}
 	}
@@ -448,21 +455,59 @@ namespace net.ninebroadcast
 			}
 
 //  ESC-)  RightArrow *  Right one half screen width (or N positions).
+			if (ki.Character == ')')
+			{
+				controller.halfWindowRight(numericInput);
+				return new DefaultInput(controller,"");
+			}
 //  ESC-(  LeftArrow  *  Left  one half screen width (or N positions).
+
+			if (ki.Character == '(')
+			{
+				controller.halfWindowLeft(numericInput);
+				return new DefaultInput(controller,"");
+			}
+
 //  ESC-}  ^RightArrow   Right to last column displayed.
+			if (ki.Character == '}')
+			{
+				// current column =  so that longest string is visible
+				;
+			}
 //  ESC-{  ^LeftArrow    Left  to first column.
-//  F                    Forward forever; like "tail -f".
+			if (ki.Character == '{')
+			{
+				// current column = 0
+				;
+			}
 //  ESC-F                Like F but stop when search pattern is found.
 //  ESC-N             *  Repeat previous search, reverse dir. & spanning files.
 //  ESC-u                Undo (toggle) search highlighting.
 //  g  <  ESC-<       *  Go to first line in file (or line N).
-//  G  >  ESC->       *  Go to last line in file (or line N).
+			if (ki.Character == '<')
+			{
+				controller.moveToStart(numericInput);
+				return new DefaultInput(controller,"");
+			}
+// G  >  ESC->       *  Go to last line in file (or line N).
+			if (ki.Character == '>')
+			{
+				controller.moveToEnd(numericInput);
+				return new DefaultInput(controller,"");
+			}
+
 //  ESC-^F <c1> <c2>  *  Find close bracket <c2>.
 //  ESC-^B <c1> <c2>  *  Find open bracket <c1> 
 //  ESC-M<letter>        Clear a mark.
 			if (ki.Character == 'M') 
 			{
+				char letter = '\0';
+				KeyInfo mm = controller.ReadKey();
+				letter = mm.Character;
+				if (letter >= 'a' && letter <= 'z')
+					controller.clearMark(letter);
 
+				return new DefaultInput(controller,"");
 			}
 
 			return new DefaultInput(controller,"");
